@@ -12,6 +12,7 @@ aber mit einem fairen, nachvollziehbaren System darunter.
 - [`docs/architektur.md`](docs/architektur.md) — Produktentscheidungen,
   Kategorien, Zeitfenster, Anti-Cheat, Fulfillment, Markenphilosophie
 - [`docs/datenmodell.md`](docs/datenmodell.md) — PocketBase-Collections-Entwurf
+- [`docs/infrastruktur-setup.md`](docs/infrastruktur-setup.md) — Checkliste für Coolify/PocketBase/n8n-Setup
 
 ## Status
 
