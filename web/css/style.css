@@ -105,3 +105,8 @@ input:focus,select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 
 .legal li{margin-bottom:6px}
 .legal strong{color:var(--text)}
 .legal a{color:var(--accent)}
+
+/* Cookie-Banner (Klaro) im RunRebels-Look */
+.klaro{--font-family:var(--font-body,inherit);--title-font-family:var(--font-display,inherit);--green1:var(--accent);--green2:var(--accent);--green3:var(--accent);--border-radius:6px}
+/* Ablehnen gleichwertig zu Akzeptieren darstellen */
+.klaro .cm-btn.cn-decline,.klaro .cm-btn.cm-btn-decline{background:var(--accent);color:var(--accent-ink)}
