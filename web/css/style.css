@@ -1,0 +1,94 @@
+/* RunRebels — Platzhalter-CI. Alle Farben/Schriften über Variablen austauschbar. */
+@font-face{font-family:"Unbounded";src:url("../fonts/unbounded-latin-wght-normal.woff2") format("woff2");font-weight:200 900;font-display:swap}
+@font-face{font-family:"Manrope";src:url("../fonts/manrope-latin-wght-normal.woff2") format("woff2");font-weight:200 800;font-display:swap}
+
+:root{
+  --bg:#2B1240;
+  --bg-deep:#1E0C2E;
+  --accent:#F23E9E;
+  --accent-ink:#FFFFFF;
+  --text:#F6EFFB;
+  --text-soft:#BCA9D4;
+  --line:#4A2A66;
+  --bib:#FFF8F2;
+  --bib-ink:#26112F;
+  --bib-soft:#7A6486;
+  --bib-line:#E6D6E4;
+  --error:#B3123F;
+  --font-display:"Unbounded",system-ui,sans-serif;
+  --font-body:"Manrope",system-ui,sans-serif;
+  --gutter:clamp(16px,4vw,48px);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:400 1.0625rem/1.6 var(--font-body)}
+img,svg{max-width:100%;display:block}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.wrap{width:min(1180px,100% - 2*var(--gutter));margin-inline:auto}
+
+/* Kopf */
+.site-head{padding-block:20px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.wordmark{font-family:var(--font-display);font-weight:800;font-size:1.125rem;letter-spacing:-.02em;text-decoration:none}
+.wordmark span{color:var(--accent)}
+.site-head nav a{margin-left:20px;font-weight:600;text-decoration:none;color:var(--text-soft)}
+.site-head nav a:hover{color:var(--text)}
+
+/* Hero: Headline links, Startnummer-Formular rechts */
+.hero{display:grid;gap:48px;padding-block:clamp(24px,6vw,72px) clamp(56px,8vw,112px);align-items:start}
+@media (min-width:960px){.hero{grid-template-columns:1.05fr .95fr;gap:72px}}
+.hero h1{font-family:var(--font-display);font-weight:900;font-size:clamp(2.1rem,9.2vw,5rem);line-height:.95;letter-spacing:-.045em;margin:0 0 28px}
+@media (min-width:960px){.hero h1{font-size:clamp(3rem,4.5vw,4.75rem)}}
+
+.hero .lead{font-size:clamp(1.125rem,2.2vw,1.375rem);max-width:34ch;margin:0 0 32px;color:var(--text)}
+.facts{display:flex;flex-wrap:wrap;gap:12px 32px;margin:0;padding:0;list-style:none;color:var(--text-soft);font-weight:600}
+.facts strong{color:var(--text);font-weight:800}
+
+/* Startnummer-Formular */
+.bib{position:relative;background:var(--bib);color:var(--bib-ink);border-radius:6px;padding:56px clamp(20px,4vw,36px) 32px;transform:rotate(1.2deg);box-shadow:0 30px 60px -30px #000a}
+.bib::before,.bib::after{content:"";position:absolute;top:18px;width:14px;height:14px;border-radius:50%;background:var(--bg);box-shadow:inset 0 2px 3px #0006}
+.bib::before{left:18px}.bib::after{right:18px}
+.bib-head{position:absolute;top:12px;left:50px;right:50px;text-align:center;font-family:var(--font-display);font-weight:800;font-size:.8125rem;letter-spacing:-.01em;color:var(--bib-soft)}
+.bib h2{font-family:var(--font-display);font-weight:800;font-size:1.5rem;letter-spacing:-.03em;line-height:1.15;margin:0 0 20px}
+@media (prefers-reduced-motion:no-preference){.bib{transition:transform .25s ease}.bib:focus-within{transform:rotate(0)}}
+@media (max-width:959px){.bib{transform:none}}
+
+.field{margin:0 0 16px;border:0;padding:0;min-width:0}
+.field label,.field legend{display:block;font-weight:700;font-size:.9375rem;margin-bottom:6px;padding:0}
+.hint{display:block;font-weight:500;font-size:.875rem;color:var(--bib-soft);margin-top:4px}
+input[type=text],input[type=email],input[type=number],select{width:100%;font:inherit;color:var(--bib-ink);background:#fff;border:2px solid var(--bib-line);border-radius:6px;padding:12px 14px;min-height:48px}
+input:focus,select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px #F23E9E40}
+.row{display:grid;gap:16px}
+@media (min-width:520px){.row.two{grid-template-columns:1fr 1fr}.row.plz{grid-template-columns:120px 1fr}}
+.choice{display:flex;gap:12px;flex-wrap:wrap}
+.choice label{display:flex;align-items:center;gap:8px;margin:0;font-weight:600;border:2px solid var(--bib-line);border-radius:6px;padding:10px 14px;cursor:pointer;min-height:48px;background:#fff}
+.choice input{accent-color:var(--accent);width:18px;height:18px}
+.choice label:has(input:checked){border-color:var(--accent);background:#FFEAF4}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:500;font-size:.9375rem;margin:0 0 12px}
+.check input{accent-color:var(--accent);width:20px;height:20px;margin-top:2px;flex:none}
+.check a{color:var(--bib-ink);font-weight:700}
+[hidden]{display:none!important}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:56px;padding:0 28px;border:0;border-radius:6px;background:var(--accent);color:var(--accent-ink);font:800 1.0625rem var(--font-display);letter-spacing:-.02em;cursor:pointer;width:100%;margin-top:8px}
+.btn:hover{filter:brightness(1.08)}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.status{margin:0 0 20px;padding:14px 16px;border-radius:6px;background:#F3E7F1;font-weight:600}
+.status.error{background:#FDE7EE;color:var(--error)}
+.field-error{color:var(--error);font-weight:600;font-size:.875rem;margin-top:4px}
+.fine{font-size:.8125rem;color:var(--bib-soft);margin:16px 0 0}
+
+/* Inhalt unter dem Hero */
+.section{padding-block:clamp(48px,7vw,96px);border-top:1px solid var(--line)}
+.section h2{font-family:var(--font-display);font-weight:800;font-size:clamp(1.75rem,4vw,2.75rem);letter-spacing:-.04em;line-height:1.05;margin:0 0 32px;max-width:18ch}
+.cols{display:grid;gap:32px 48px}
+@media (min-width:760px){.cols{grid-template-columns:repeat(2,1fr)}}
+.cols h3{font-family:var(--font-display);font-weight:700;font-size:1.125rem;letter-spacing:-.02em;margin:0 0 8px}
+.cols p{margin:0;color:var(--text-soft);max-width:46ch}
+.cols p strong{color:var(--text)}
+
+.site-foot{border-top:1px solid var(--line);padding-block:32px 48px;color:var(--text-soft);font-size:.9375rem}
+.site-foot .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between}
+.site-foot nav a{margin-right:20px}
