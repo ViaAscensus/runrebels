@@ -92,3 +92,16 @@ input:focus,select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 
 .site-foot{border-top:1px solid var(--line);padding-block:32px 48px;color:var(--text-soft);font-size:.9375rem}
 .site-foot .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between}
 .site-foot nav a{margin-right:20px}
+
+/* Rechtsseiten */
+.legal{padding-block:clamp(32px,6vw,80px);max-width:760px}
+.legal h1{font-family:var(--font-display);font-weight:900;font-size:clamp(2rem,5.5vw,3.25rem);letter-spacing:-.045em;line-height:1;margin:0 0 12px}
+.legal .stand{color:var(--text-soft);margin:0 0 40px;font-size:.9375rem}
+.legal h2{font-family:var(--font-display);font-weight:800;font-size:1.25rem;letter-spacing:-.03em;margin:40px 0 12px}
+.legal h3{font-family:var(--font-display);font-weight:700;font-size:1.0625rem;letter-spacing:-.02em;margin:24px 0 8px}
+.legal p,.legal li{color:var(--text-soft);line-height:1.65}
+.legal p{margin:0 0 14px}
+.legal ul{margin:0 0 14px;padding-left:1.25em}
+.legal li{margin-bottom:6px}
+.legal strong{color:var(--text)}
+.legal a{color:var(--accent)}
