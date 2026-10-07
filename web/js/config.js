@@ -6,5 +6,5 @@ window.RUNREBELS = {
   EVENT_SLUG: "laufrausch-2027",
   // Tracking, nur mit Einwilligung (siehe js/consent.js). Leer lassen = Dienst aus.
   GA_ID: "G-20KGF6LVZB",
-  CLARITY_ID: ""
+  CLARITY_ID: "yu5fnsr3n0"
 };
