@@ -135,7 +135,7 @@ tatsächlichen Risiko. Stattdessen zweistufig:
 
 ## 7. Infrastruktur
 
-- Coolify auf demselben Hetzner-Server wie ascensus.fit — aber **eigene**
+- Coolify auf demselben Hostinger-VPS (Paris) wie ascensus.fit — aber **eigene**
   PocketBase- und **eigene** n8n-Instanz, nicht die von ASCENSUS
   mitgenutzt. Datentrennung trotz geteiltem Server.
 - Repo: `ViaAscensus/runrebels` (dieses Repository).
@@ -171,5 +171,50 @@ tatsächlichen Risiko. Stattdessen zweistufig:
 - Höhe der Startgebühr
 - Design von Startnummer/Urkunde/Medaille
 - Finale CI (siehe Abschnitt 8)
-- Aufsetzen der eigenen PocketBase- und n8n-Instanz (Infrastruktur-Task,
-  kein Code-Task)
+- Höhe des Schweiz-Aufschlags (`events.aufschlag_ch_cent`)
+- Strava-API-App und Athleten-Kapazität, Mail-Aliase, SMTP (siehe
+  `docs/infrastruktur-setup.md`, Abschnitt 5)
+
+## 10. Entscheidungen aus der Planung (Okt 2026)
+
+**Technik**
+- Statisches Frontend aus dem Repo (Coolify Static Site, manueller
+  Redeploy), PocketBase-SDK im Browser, n8n für Zahlung/Strava/Auswertung.
+- Stripe Checkout (gehostet) mit Line-Items. Teilnehmer + Bestellung werden
+  vor der Zahlung als `offen` angelegt, Stripe-Webhook läuft über n8n.
+- Strava per Webhook (+ Nachabgleich in der Kulanzfrist), Tokens
+  verschlüsselt von n8n gespeichert. FIT/GPX serverseitig in n8n.
+- Foto-Auslesung: Gemini API (Google AI Studio, bezahlte Stufe), nur Foto +
+  fester Prompt; AVV/EU-Verarbeitung vorher mit dem Datenschutzanwalt
+  klären. Teilnehmer bestätigt die Werte aktiv.
+- Standings werden bei jeder `ok`-Einreichung neu berechnet, plus
+  nächtlicher Abgleich.
+
+**Prüfung**
+- Eigene, nicht verlinkte Prüfseite im RunRebels-Design, Login mit dem
+  PocketBase-Superuser (später auf eine `pruefer`-Collection erweiterbar).
+- Ablehnung nur mit Pflicht-Begründung; Teilnehmer kann neu einreichen,
+  max. 3 abgelehnte Einreichungen pro Tag. Manuelle Sperre möglich.
+- Kinder reichen nur per Foto/Datei durch die Eltern ein (kein Strava).
+- Anzeigename ist frei wählbar (`teilnehmer.anzeigename`).
+
+**Ablauf, Geld, Versand**
+- Kulanzfrist 3 Tage nach Challenge-Ende. Urkunde sofort als PDF, Medaille
+  gesammelt nach der Kulanzfrist.
+- Storno bis `anmeldeschluss`, Erstattung abzüglich Stripe-Gebühr, manuell
+  über `storno@runrebels.com`; Status `storniert`. Danach keine Erstattung.
+- Keine Mindestteilnehmerzahl; Absage nur bei höherer Gewalt (volle
+  Erstattung).
+- Versand nach DE/AT/CH, Adresse bei der Anmeldung (in `fulfillment`).
+  Schweiz: Aufschlag als eigenes Line-Item.
+- Unbezahlte Anmeldungen: zwei Zahlungserinnerungen (24 h nach Anmeldung,
+  3 Tage vor `anmeldeschluss`), dann Status `verfallen`, Löschung nach
+  30 Tagen.
+
+**E-Mails** (von `runner@runrebels.com`, reine Service-Mails): Anmeldebestätigung,
+2 Zahlungserinnerungen, Start-Erinnerung, Einreichung angenommen,
+Einreichung abgelehnt, Ergebnis + Urkunde, Medaille versandt.
+
+**Recht:** Eigene Texte für runrebels.com (Impressum, Datenschutz,
+Teilnahmebedingungen/Storno), Entwurf durch Claude, Prüfung durch den
+Anwalt vor dem Launch.

@@ -14,9 +14,10 @@ nicht aus eigener Annahme.
 
 ## Status
 
-Repo gerade angelegt, noch kein Code. Infrastruktur (Coolify, eigene
-PocketBase- und n8n-Instanz) existiert noch nicht — siehe "Offene Punkte"
-in `docs/architektur.md`.
+Infrastruktur steht (Hostinger-VPS/Coolify, `pb.runrebels.com`,
+`n8n.runrebels.com`, Collections importiert, siehe
+`docs/infrastruktur-setup.md`). Planung abgeschlossen (Entscheidungen in
+`docs/architektur.md`, Abschnitt 10). Anwendungscode: im Aufbau.
 
 ## Grundprinzipien
 

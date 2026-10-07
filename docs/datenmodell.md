@@ -1,9 +1,9 @@
 # Datenmodell — PocketBase-Collections (Entwurf)
 
-Entwurf für die **eigene** PocketBase-Instanz von RunRebels (nicht die von
-ASCENSUS). Noch nicht angelegt — die Instanz selbst ist ein
-Infrastruktur-Task (Coolify), kein Code-Task. Dieses Dokument ist die
-Grundlage dafür, sobald die Instanz erreichbar ist.
+Datenmodell der **eigenen** PocketBase-Instanz von RunRebels (nicht die von
+ASCENSUS, `pb.runrebels.com`). Die Collections sind angelegt; dieses Dokument
+ist die Quelle der Wahrheit für Felder und Status. Stand der Planung:
+Entscheidungen 1–33 (siehe `docs/architektur.md`).
 
 Jede Collection trägt bewusst ein `organizer`-Feld, auch im Single-Tenant-
 Piloten — das macht eine spätere Multi-Tenant-Erweiterung zu einer
@@ -20,7 +20,8 @@ Eine Challenge-Instanz (z. B. "Laufrausch — Neujahrschallenge 2027").
 | `slug` | text | für URLs |
 | `start_date` | date | 2027-01-01 |
 | `end_date` | date | 2027-01-31 |
-| `grace_until` | date | 2027-02-03, letzter Zeitpunkt für Nachsynchronisation |
+| `anmeldeschluss` | date | letzter Tag für Anmeldung **und** kostenlose Stornierung; danach werden unbezahlte Anmeldungen `verfallen` |
+| `grace_until` | date | 2027-02-03 (3 Tage Kulanzfrist nach `end_date`), letzter Zeitpunkt für Nachsynchronisation und Einreichung |
 | `status` | select | `entwurf` / `anmeldung_offen` / `laeuft` / `kulanzfrist` / `final` |
 | `km_goal` | number | Ziel für die Freie-Distanz/Kumulativ-Medaille |
 | `bestzeit_distanz_km` | number | 10 |
@@ -30,6 +31,7 @@ Eine Challenge-Instanz (z. B. "Laufrausch — Neujahrschallenge 2027").
 | `kinderdistanz_max_alter` | number | 12 |
 | `preis_cent` | number | Startgebühr, Line-Item 1 |
 | `waehrung` | text | "EUR" |
+| `aufschlag_ch_cent` | number | Versandaufschlag Schweiz, wird als eigenes Line-Item hinzugefügt (Höhe offen) |
 
 ## `teilnehmer`
 
@@ -40,6 +42,7 @@ Eine Registrierung für ein Event.
 | `event` | relation → `events` | |
 | `kategorie` | select | `erwachsen` / `kind` |
 | `name` | text | |
+| `anzeigename` | text | frei wählbar, einziger Name in der öffentlichen Rangliste (nie bei `kategorie = kind`) |
 | `email` | email | |
 | `geschlecht` | select | `maennlich` / `weiblich` / `divers` — nur für `erwachsen` |
 | `divers_oeffentlich_optin` | bool | default false, jederzeit widerrufbar |
@@ -48,6 +51,9 @@ Eine Registrierung für ein Event.
 | `eltern_email` | email | nur für `kategorie = kind` |
 | `geburtsjahr` | number | zur Altersprüfung Kinderdistanz |
 | `startnummer` | text | generiert bei Zahlungseingang |
+| `status` | select | `offen` (vor Zahlung) / `aktiv` / `storniert` / `verfallen` — Rangliste, Medaillen-Liste und Einreichungen filtern auf `aktiv` |
+| `gesperrt` | bool | default false, manuell durch den Prüfer (z. B. bei Betrugsverdacht), blockiert neue Einreichungen |
+| `agb_akzeptiert_am` | datetime | Nachweis der Zustimmung zu Teilnahmebedingungen/Datenschutz |
 | `strava_athlete_id` | text | nullable, gesetzt nach OAuth-Verknüpfung |
 | `strava_access_token` | text | verschlüsselt speichern |
 | `strava_refresh_token` | text | verschlüsselt speichern |
@@ -62,7 +68,13 @@ Zahlungs-/Checkout-Datensatz, als Line-Items statt Festpreis.
 | `stripe_payment_intent_id` | text | |
 | `line_items` | json | `[{"typ": "startgebuehr", "betrag_cent": ...}]` — spätere Merch-Line-Items kommen hier als weitere Array-Einträge dazu |
 | `betrag_gesamt_cent` | number | |
-| `status` | select | `offen` / `bezahlt` / `fehlgeschlagen` / `erstattet` |
+| `status` | select | `offen` / `bezahlt` / `fehlgeschlagen` / `erstattet` / `storniert` / `verfallen` |
+| `erinnerung1_gesendet` | datetime | 24 h nach Anmeldung, nur bei `offen` — verhindert Doppelversand |
+| `erinnerung2_gesendet` | datetime | 3 Tage vor `anmeldeschluss`, nur bei `offen` |
+
+Aufbewahrung: Bestelldaten bleiben für die Buchhaltung erhalten.
+`verfallen` (am Anmeldeschluss unbezahlt) wird 30 Tage später samt
+Teilnehmer und Adresse gelöscht.
 
 ## `einreichungen`
 
@@ -84,6 +96,7 @@ Eine einzelne Lauf-Aktivität, egal über welchen der drei Wege eingereicht.
 | `teilnehmer_bestaetigt` | bool | Pflicht `true` bei `quelle = foto`, bevor die Einreichung zählt |
 | `zaehlt_fuer_bestzeit` | bool | nur `true` wenn `distanz_km` ≈ `bestzeit_distanz_km` des Events |
 | `status` | select | `eingereicht` / `ok` / `verdacht` / `abgelehnt` |
+| `ablehnungsgrund` | text | Pflicht bei `abgelehnt`, wird dem Teilnehmer per Mail genannt. Limit: max. 3 abgelehnte Einreichungen pro Teilnehmer und Tag (aus `geprueft_am` berechnet, kein Zähler-Feld) |
 | `verdacht_grund` | text | welcher Schwellenwert ausgelöst hat |
 | `ki_einschaetzung` | text | kurze KI-Zusammenfassung des Falls, nur bei `status = verdacht` |
 | `geprueft_von` | text | Name des menschlichen Prüfers |
@@ -114,6 +127,7 @@ Cache für performante Ranglisten-Anzeige — neu berechnet bei jeder neuen
 |---|---|---|
 | `teilnehmer` | relation → `teilnehmer` | |
 | `medaillen_typ` | select | `teilnahme` / `bestzeit_top3` / `kind` |
-| `adresse` | text | |
+| `adresse` | text | Straße, Nr., PLZ, Ort — wird bei der Anmeldung angelegt, nach Medaillenversand gelöscht |
+| `land` | select | `DE` / `AT` / `CH` (bei `CH` kommt `events.aufschlag_ch_cent` als Line-Item dazu) |
 | `versand_status` | select | `offen` / `verpackt` / `versendet` |
 | `versanddatum` | date | |
