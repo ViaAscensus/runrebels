@@ -31,6 +31,7 @@ Eine Challenge-Instanz (z. B. "Laufrausch — Neujahrschallenge 2027").
 | `kinderdistanz_max_alter` | number | 12 |
 | `preis_cent` | number | Startgebühr, Line-Item 1 |
 | `waehrung` | text | "EUR" |
+| `eventskuerzel` | text | Kürzel für die Startnummer, z. B. `LR27`; wird im PocketBase-Admin gepflegt |
 | `aufschlag_ch_cent` | number | Versandaufschlag Schweiz, wird als eigenes Line-Item hinzugefügt (Höhe offen) |
 
 ## `teilnehmer`
@@ -50,7 +51,7 @@ Eine Registrierung für ein Event.
 | `eltern_name` | text | nur für `kategorie = kind`, Pflichtfeld bei Anlage |
 | `eltern_email` | email | nur für `kategorie = kind` |
 | `geburtsjahr` | number | zur Altersprüfung Kinderdistanz |
-| `startnummer` | text | generiert bei Zahlungseingang |
+| `startnummer` | text | `<eventskuerzel>-<laufende Nr., 4-stellig>`, z. B. `LR27-0001`; vom Stripe-Webhook-Workflow bei Zahlungseingang vergeben |
 | `status` | select | `offen` (vor Zahlung) / `aktiv` / `storniert` / `verfallen` — Rangliste, Medaillen-Liste und Einreichungen filtern auf `aktiv` |
 | `gesperrt` | bool | default false, manuell durch den Prüfer (z. B. bei Betrugsverdacht), blockiert neue Einreichungen |
 | `agb_akzeptiert_am` | datetime | Nachweis der Zustimmung zu Teilnahmebedingungen/Datenschutz |

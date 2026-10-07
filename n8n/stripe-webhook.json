@@ -1,0 +1,571 @@
+{
+  "name": "RunRebels – Stripe Webhook",
+  "nodes": [
+    {
+      "id": "s1",
+      "name": "Webhook Stripe",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "rr-stripe",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "stripe",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "s2",
+      "name": "Prüfen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const b = $json.body || {};\nconst obj = b.data && b.data.object;\nif (b.type !== 'checkout.session.completed' || !obj || !obj.id) {\n  return [{ json: { ignorieren: true, grund: b.type || 'kein Event' } }];\n}\nreturn [{ json: { ignorieren: false, session_id: obj.id } }];"
+      }
+    },
+    {
+      "id": "s3",
+      "name": "Relevant?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.ignorieren }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "s4",
+      "name": "Get Session",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        200
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.stripe.com/v1/checkout/sessions/{{ $json.session_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Stripe test"
+        }
+      }
+    },
+    {
+      "id": "s5",
+      "name": "Session auswerten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const s = $json;\nconst m = s.metadata || {};\nconst bezahlt = s.payment_status === 'paid' && !!m.bestellung_id && !!m.teilnehmer_id;\nreturn [{ json: {\n  bezahlt,\n  bestellung_id: m.bestellung_id || null,\n  teilnehmer_id: m.teilnehmer_id || null,\n  payment_intent: typeof s.payment_intent === 'string' ? s.payment_intent : (s.payment_intent && s.payment_intent.id) || null\n} }];"
+      }
+    },
+    {
+      "id": "s6",
+      "name": "Bezahlt?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.bezahlt }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "s7",
+      "name": "PB Login",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://pb.runrebels.com/api/collections/_superusers/auth-with-password",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}"
+      },
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "",
+          "name": "PocketBase Superuser"
+        }
+      }
+    },
+    {
+      "id": "s8",
+      "name": "Get Bestellung",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        100
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://pb.runrebels.com/api/collections/bestellungen/records/{{ $('Session auswerten').first().json.bestellung_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login').first().json.token }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "s9",
+      "name": "Get Teilnehmer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        100
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://pb.runrebels.com/api/collections/teilnehmer/records/{{ $('Session auswerten').first().json.teilnehmer_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login').first().json.token }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "s10",
+      "name": "Get Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        100
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://pb.runrebels.com/api/collections/events/records/{{ $('Get Teilnehmer').first().json.event }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login').first().json.token }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "s11",
+      "name": "Letzte Startnummer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        100
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://pb.runrebels.com/api/collections/teilnehmer/records?perPage=1&sort=-startnummer&fields=startnummer&filter=' + encodeURIComponent('event=\"' + $('Get Teilnehmer').first().json.event + '\" && startnummer!=\"\"') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login').first().json.token }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "s12",
+      "name": "Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        100
+      ],
+      "parameters": {
+        "jsCode": "const be = $('Get Bestellung').first().json;\nconst tn = $('Get Teilnehmer').first().json;\nconst ev = $('Get Event').first().json;\nconst letzte = $('Letzte Startnummer').first().json;\nconst sess = $('Session auswerten').first().json;\nif (be.status === 'bezahlt') return [{ json: { neu: false } }];\nif (!ev.eventskuerzel) throw new Error('events.eventskuerzel ist nicht gesetzt');\nlet nr = tn.startnummer;\nif (!nr) {\n  const items = letzte.items || [];\n  const last = items.length ? parseInt(String(items[0].startnummer).split('-').pop(), 10) : 0;\n  const next = (isNaN(last) ? 0 : last) + 1;\n  nr = ev.eventskuerzel + '-' + String(next).padStart(4, '0');\n}\nreturn [{ json: { neu: true, startnummer: nr, payment_intent: sess.payment_intent } }];"
+      }
+    },
+    {
+      "id": "s13",
+      "name": "Neu?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2640,
+        100
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.neu }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "s14",
+      "name": "Update Teilnehmer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://pb.runrebels.com/api/collections/teilnehmer/records/{{ $('Session auswerten').first().json.teilnehmer_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login').first().json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'aktiv', startnummer: $('Plan').first().json.startnummer }) }}"
+      }
+    },
+    {
+      "id": "s15",
+      "name": "Update Bestellung",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://pb.runrebels.com/api/collections/bestellungen/records/{{ $('Session auswerten').first().json.bestellung_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login').first().json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'bezahlt', stripe_payment_intent_id: $('Plan').first().json.payment_intent }) }}"
+      }
+    },
+    {
+      "id": "s16",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, startnummer: $('Plan').first().json.startnummer }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "s17",
+      "name": "Respond Ignoriert",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2860,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, ignoriert: true }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Stripe": {
+      "main": [
+        [
+          {
+            "node": "Prüfen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prüfen": {
+      "main": [
+        [
+          {
+            "node": "Relevant?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relevant?": {
+      "main": [
+        [
+          {
+            "node": "Get Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Ignoriert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Session": {
+      "main": [
+        [
+          {
+            "node": "Session auswerten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Session auswerten": {
+      "main": [
+        [
+          {
+            "node": "Bezahlt?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bezahlt?": {
+      "main": [
+        [
+          {
+            "node": "PB Login",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Ignoriert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PB Login": {
+      "main": [
+        [
+          {
+            "node": "Get Bestellung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Bestellung": {
+      "main": [
+        [
+          {
+            "node": "Get Teilnehmer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Teilnehmer": {
+      "main": [
+        [
+          {
+            "node": "Get Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Event": {
+      "main": [
+        [
+          {
+            "node": "Letzte Startnummer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Letzte Startnummer": {
+      "main": [
+        [
+          {
+            "node": "Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan": {
+      "main": [
+        [
+          {
+            "node": "Neu?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Neu?": {
+      "main": [
+        [
+          {
+            "node": "Update Teilnehmer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Ignoriert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Teilnehmer": {
+      "main": [
+        [
+          {
+            "node": "Update Bestellung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Bestellung": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
