@@ -22,3 +22,18 @@ Danach den Workflow **aktivieren** (nur dann gilt die Produktions-URL
 Hinweis: Mehrfach begonnene, unbezahlte Anmeldungen derselben Person legen
 mehrere `offen`-Datensätze an. Sie verfallen am Anmeldeschluss und werden
 nach 30 Tagen gelöscht. Nur bezahlte werden `aktiv`.
+
+## Workflow „RunRebels – Stripe Webhook" (`stripe-webhook.json`)
+
+Empfängt `checkout.session.completed` von Stripe (`POST https://n8n.runrebels.com/webhook/stripe`).
+Statt die Signatur zu prüfen, holt der Workflow die Session über die Stripe-API
+(`GET /v1/checkout/sessions/{id}`) und verlässt sich nur auf deren Antwort. Ein gefälschter
+Webhook-Aufruf kann so keine Zahlung vortäuschen.
+
+Ablauf: Session prüfen (`payment_status = paid`) → PB Login → Bestellung/Teilnehmer/Event laden →
+nächste Startnummer ermitteln → Teilnehmer `aktiv` + Startnummer, Bestellung `bezahlt`.
+Idempotent: Eine bereits `bezahlte` Bestellung wird übersprungen (Stripe wiederholt Webhooks).
+
+Nach dem Import müssen die Credentials zugewiesen werden: `Stripe test` (Header Auth) im Node
+„Get Session" und `PocketBase Superuser` im Node „PB Login". Danach speichern und veröffentlichen.
+Noch nicht enthalten: Bestätigungsmail (wartet auf SMTP für `runner@runrebels.com`).

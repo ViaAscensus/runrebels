@@ -1,480 +1,480 @@
 {
- "name": "RunRebels – Anmeldung",
- "nodes": [
-  {
-   "id": "n1",
-   "name": "Webhook Anmeldung",
-   "type": "n8n-nodes-base.webhook",
-   "typeVersion": 2,
-   "position": [
-    0,
-    300
-   ],
-   "parameters": {
-    "httpMethod": "POST",
-    "path": "anmeldung",
-    "responseMode": "responseNode",
-    "options": {
-     "allowedOrigins": "https://runrebels.com,https://www.runrebels.com"
-    }
-   },
-   "webhookId": "rr-anmeldung"
-  },
-  {
-   "id": "n2",
-   "name": "Validate",
-   "type": "n8n-nodes-base.code",
-   "typeVersion": 2,
-   "position": [
-    220,
-    300
-   ],
-   "parameters": {
-    "jsCode": "const b = $input.first().json.body || {};\nconst s = (v, max=200) => (typeof v === 'string' ? v.trim().slice(0, max) : '');\nconst fail = (m) => [{ json: { fehler: m, status: 400 } }];\n\nif (s(b.website)) return fail('Anmeldung abgelehnt.');           // Honeypot\nconst kind = b.kategorie === 'kind';\nif (!['erwachsen','kind'].includes(b.kategorie)) return fail('Ungültige Kategorie.');\nif (!/^[a-z0-9]{15}$/.test(s(b.event_id, 20))) return fail('Ungültige Challenge.');\nconst name = s(b.name, 100);\nif (name.length < 2) return fail('Bitte trag einen Namen ein.');\nconst email = s(b.email, 200).toLowerCase();\nif (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) return fail('Bitte trag eine gültige E-Mail-Adresse ein.');\nconst jahr = parseInt(b.geburtsjahr, 10), now = new Date().getFullYear();\nif (!jahr || jahr < 1920 || jahr > now) return fail('Ungültiges Geburtsjahr.');\nif (!['DE','AT','CH'].includes(b.land)) return fail('Wir versenden nur nach Deutschland, Österreich und in die Schweiz.');\nconst adresse = s(b.adresse, 300);\nif (adresse.length < 8) return fail('Bitte trag deine vollständige Adresse ein.');\nif (b.agb_akzeptiert !== true) return fail('Bitte akzeptiere die Teilnahmebedingungen.');\n\nconst d = { event_id: b.event_id, kategorie: b.kategorie, name, email, geburtsjahr: jahr, land: b.land, adresse };\nif (kind) {\n  const eltern = s(b.eltern_name, 100);\n  if (eltern.length < 2) return fail('Bitte trag den Namen des Elternteils ein.');\n  d.eltern_name = eltern; d.eltern_email = email;\n} else {\n  if (now - jahr < 13) return fail('Für Kinder wähle „Mein Kind“.');\n  if (!['maennlich','weiblich','divers'].includes(b.geschlecht)) return fail('Bitte wähle eine Wertung.');\n  d.geschlecht = b.geschlecht;\n  d.anzeigename = s(b.anzeigename, 40) || name.split(/\\s+/)[0];\n  if (b.geschlecht === 'divers') {\n    if (!['maennlich','weiblich'].includes(b.podium_wahl)) return fail('Bitte wähle die Bestzeit-Wertung.');\n    d.podium_wahl = b.podium_wahl;\n    d.divers_oeffentlich_optin = b.divers_oeffentlich_optin === true;\n  } else {\n    d.divers_oeffentlich_optin = false;\n  }\n}\nreturn [{ json: { ok: true, data: d } }];"
-   }
-  },
-  {
-   "id": "n3",
-   "name": "Valid?",
-   "type": "n8n-nodes-base.if",
-   "typeVersion": 2.2,
-   "position": [
-    440,
-    300
-   ],
-   "parameters": {
-    "conditions": {
-     "options": {
-      "caseSensitive": true,
-      "typeValidation": "loose"
-     },
-     "conditions": [
-      {
-       "id": "c1",
-       "leftValue": "={{ $json.ok }}",
-       "rightValue": "",
-       "operator": {
-        "type": "boolean",
-        "operation": "true",
-        "singleValue": true
-       }
-      }
-     ],
-     "combinator": "and"
-    }
-   }
-  },
-  {
-   "id": "n4",
-   "name": "PB Login",
-   "type": "n8n-nodes-base.httpRequest",
-   "typeVersion": 4.2,
-   "position": [
-    660,
-    200
-   ],
-   "parameters": {
-    "method": "POST",
-    "url": "https://pb.runrebels.com/api/collections/_superusers/auth-with-password",
-    "authentication": "genericCredentialType",
-    "genericAuthType": "httpCustomAuth",
-    "sendBody": true,
-    "specifyBody": "json",
-    "jsonBody": "{}"
-   },
-   "credentials": {
-    "httpCustomAuth": {
-     "id": "",
-     "name": "PocketBase Superuser"
-    }
-   }
-  },
-  {
-   "id": "n5",
-   "name": "Get Event",
-   "type": "n8n-nodes-base.httpRequest",
-   "typeVersion": 4.2,
-   "position": [
-    880,
-    200
-   ],
-   "parameters": {
-    "method": "GET",
-    "url": "=https://pb.runrebels.com/api/collections/events/records/{{ $('Validate').first().json.data.event_id }}",
-    "sendHeaders": true,
-    "headerParameters": {
-     "parameters": [
-      {
-       "name": "Authorization",
-       "value": "={{ $('PB Login').first().json.token }}"
-      }
-     ]
-    }
-   }
-  },
-  {
-   "id": "n6",
-   "name": "Check Event",
-   "type": "n8n-nodes-base.code",
-   "typeVersion": 2,
-   "position": [
-    1100,
-    200
-   ],
-   "parameters": {
-    "jsCode": "const ev = $input.first().json;           // Antwort der Event-Abfrage\nconst d = $('Validate').first().json.data;\nconst fail = (m, status=400) => [{ json: { fehler: m, status } }];\n\nif (ev.status !== 'anmeldung_offen') return fail('Die Anmeldung ist nicht geöffnet.');\nif (!ev.preis_cent || ev.preis_cent < 50) return fail('Die Anmeldung ist noch nicht geöffnet.');\nif (ev.anmeldeschluss) {\n  const ende = new Date(ev.anmeldeschluss.replace(' ', 'T'));\n  ende.setUTCHours(23, 59, 59, 999);\n  if (Date.now() > ende.getTime()) return fail('Der Anmeldeschluss ist vorbei.');\n}\nif (d.kategorie === 'kind') {\n  const alter = new Date().getFullYear() - d.geburtsjahr;\n  if (ev.kinderdistanz_max_alter && alter > ev.kinderdistanz_max_alter) return fail('Die Kinderdistanz gilt nur bis ' + ev.kinderdistanz_max_alter + ' Jahre.');\n}\n\nconst items = [{ typ: 'startgebuehr', bezeichnung: ev.name + ' – Startgebühr', betrag_cent: ev.preis_cent }];\nif (d.land === 'CH' && ev.aufschlag_ch_cent > 0) {\n  items.push({ typ: 'versand_ch', bezeichnung: 'Versandaufschlag Schweiz', betrag_cent: ev.aufschlag_ch_cent });\n}\nconst summe = items.reduce((a, i) => a + i.betrag_cent, 0);\n\nconst teilnehmer = {\n  event: ev.id, kategorie: d.kategorie, name: d.name, email: d.email,\n  geburtsjahr: d.geburtsjahr, status: 'offen',\n  agb_akzeptiert_am: new Date().toISOString().replace('T', ' ')\n};\n['anzeigename','geschlecht','podium_wahl','eltern_name','eltern_email'].forEach(k => { if (d[k]) teilnehmer[k] = d[k]; });\nif (d.divers_oeffentlich_optin !== undefined) teilnehmer.divers_oeffentlich_optin = d.divers_oeffentlich_optin;\n\nreturn [{ json: {\n  ok: true, teilnehmer, items, summe, waehrung: (ev.waehrung || 'EUR').toLowerCase(),\n  fulfillment: { medaillen_typ: d.kategorie === 'kind' ? 'kind' : 'teilnahme', adresse: d.adresse, land: d.land, versand_status: 'offen' },\n  eventName: ev.name\n} }];"
-   }
-  },
-  {
-   "id": "n7",
-   "name": "Event OK?",
-   "type": "n8n-nodes-base.if",
-   "typeVersion": 2.2,
-   "position": [
-    1320,
-    200
-   ],
-   "parameters": {
-    "conditions": {
-     "options": {
-      "caseSensitive": true,
-      "typeValidation": "loose"
-     },
-     "conditions": [
-      {
-       "id": "c2",
-       "leftValue": "={{ $json.ok }}",
-       "rightValue": "",
-       "operator": {
-        "type": "boolean",
-        "operation": "true",
-        "singleValue": true
-       }
-      }
-     ],
-     "combinator": "and"
-    }
-   }
-  },
-  {
-   "id": "n8",
-   "name": "Create Teilnehmer",
-   "type": "n8n-nodes-base.httpRequest",
-   "typeVersion": 4.2,
-   "position": [
-    1540,
-    100
-   ],
-   "parameters": {
-    "method": "POST",
-    "url": "https://pb.runrebels.com/api/collections/teilnehmer/records",
-    "sendHeaders": true,
-    "headerParameters": {
-     "parameters": [
-      {
-       "name": "Authorization",
-       "value": "={{ $('PB Login').first().json.token }}"
-      }
-     ]
+  "name": "RunRebels – Anmeldung",
+  "nodes": [
+    {
+      "id": "n1",
+      "name": "Webhook Anmeldung",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "anmeldung",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://runrebels.com,https://www.runrebels.com"
+        }
+      },
+      "webhookId": "rr-anmeldung"
     },
-    "sendBody": true,
-    "specifyBody": "json",
-    "jsonBody": "={{ JSON.stringify($('Check Event').first().json.teilnehmer) }}"
-   }
-  },
-  {
-   "id": "n9",
-   "name": "Create Fulfillment",
-   "type": "n8n-nodes-base.httpRequest",
-   "typeVersion": 4.2,
-   "position": [
-    1760,
-    100
-   ],
-   "parameters": {
-    "method": "POST",
-    "url": "https://pb.runrebels.com/api/collections/fulfillment/records",
-    "sendHeaders": true,
-    "headerParameters": {
-     "parameters": [
-      {
-       "name": "Authorization",
-       "value": "={{ $('PB Login').first().json.token }}"
+    {
+      "id": "n2",
+      "name": "Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body || {};\nconst s = (v, max=200) => (typeof v === 'string' ? v.trim().slice(0, max) : '');\nconst fail = (m) => [{ json: { fehler: m, status: 400 } }];\n\nif (s(b.website)) return fail('Anmeldung abgelehnt.');           // Honeypot\nconst kind = b.kategorie === 'kind';\nif (!['erwachsen','kind'].includes(b.kategorie)) return fail('Ungültige Kategorie.');\nif (!/^[a-z0-9]{15}$/.test(s(b.event_id, 20))) return fail('Ungültige Challenge.');\nconst name = s(b.name, 100);\nif (name.length < 2) return fail('Bitte trag einen Namen ein.');\nconst email = s(b.email, 200).toLowerCase();\nif (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) return fail('Bitte trag eine gültige E-Mail-Adresse ein.');\nconst jahr = parseInt(b.geburtsjahr, 10), now = new Date().getFullYear();\nif (!jahr || jahr < 1920 || jahr > now) return fail('Ungültiges Geburtsjahr.');\nif (!['DE','AT','CH'].includes(b.land)) return fail('Wir versenden nur nach Deutschland, Österreich und in die Schweiz.');\nconst adresse = s(b.adresse, 300);\nif (adresse.length < 8) return fail('Bitte trag deine vollständige Adresse ein.');\nif (b.agb_akzeptiert !== true) return fail('Bitte akzeptiere die Teilnahmebedingungen.');\n\nconst d = { event_id: b.event_id, kategorie: b.kategorie, name, email, geburtsjahr: jahr, land: b.land, adresse };\nif (kind) {\n  const eltern = s(b.eltern_name, 100);\n  if (eltern.length < 2) return fail('Bitte trag den Namen des Elternteils ein.');\n  d.eltern_name = eltern; d.eltern_email = email;\n} else {\n  if (now - jahr < 13) return fail('Für Kinder wähle „Mein Kind“.');\n  if (!['maennlich','weiblich','divers'].includes(b.geschlecht)) return fail('Bitte wähle eine Wertung.');\n  d.geschlecht = b.geschlecht;\n  d.anzeigename = s(b.anzeigename, 40) || name.split(/\\s+/)[0];\n  if (b.geschlecht === 'divers') {\n    if (!['maennlich','weiblich'].includes(b.podium_wahl)) return fail('Bitte wähle die Bestzeit-Wertung.');\n    d.podium_wahl = b.podium_wahl;\n    d.divers_oeffentlich_optin = b.divers_oeffentlich_optin === true;\n  } else {\n    d.divers_oeffentlich_optin = false;\n  }\n}\nreturn [{ json: { ok: true, data: d } }];"
       }
-     ]
     },
-    "sendBody": true,
-    "specifyBody": "json",
-    "jsonBody": "={{ JSON.stringify(Object.assign({ teilnehmer: $('Create Teilnehmer').first().json.id }, $('Check Event').first().json.fulfillment)) }}"
-   }
-  },
-  {
-   "id": "n10",
-   "name": "Create Bestellung",
-   "type": "n8n-nodes-base.httpRequest",
-   "typeVersion": 4.2,
-   "position": [
-    1980,
-    100
-   ],
-   "parameters": {
-    "method": "POST",
-    "url": "https://pb.runrebels.com/api/collections/bestellungen/records",
-    "sendHeaders": true,
-    "headerParameters": {
-     "parameters": [
-      {
-       "name": "Authorization",
-       "value": "={{ $('PB Login').first().json.token }}"
+    {
+      "id": "n3",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
       }
-     ]
     },
-    "sendBody": true,
-    "specifyBody": "json",
-    "jsonBody": "={{ JSON.stringify({ teilnehmer: $('Create Teilnehmer').first().json.id, line_items: $('Check Event').first().json.items.map(i => ({typ: i.typ, betrag_cent: i.betrag_cent})), betrag_gesamt_cent: $('Check Event').first().json.summe, status: 'offen' }) }}"
-   }
-  },
-  {
-   "id": "n11",
-   "name": "Stripe Body",
-   "type": "n8n-nodes-base.code",
-   "typeVersion": 2,
-   "position": [
-    2200,
-    100
-   ],
-   "parameters": {
-    "jsCode": "const c = $('Check Event').first().json;\nconst t = $('Create Teilnehmer').first().json;\nconst bst = $('Create Bestellung').first().json;\nconst p = new URLSearchParams();\np.set('mode', 'payment');\np.set('locale', 'de');\np.set('customer_email', c.teilnehmer.email);\np.set('success_url', 'https://runrebels.com/danke.html');\np.set('cancel_url', 'https://runrebels.com/#anmeldung');\np.set('metadata[bestellung_id]', bst.id);\np.set('metadata[teilnehmer_id]', t.id);\np.set('payment_intent_data[metadata][bestellung_id]', bst.id);\np.set('payment_intent_data[metadata][teilnehmer_id]', t.id);\nc.items.forEach((it, i) => {\n  p.set(`line_items[${i}][quantity]`, '1');\n  p.set(`line_items[${i}][price_data][currency]`, c.waehrung);\n  p.set(`line_items[${i}][price_data][unit_amount]`, String(it.betrag_cent));\n  p.set(`line_items[${i}][price_data][product_data][name]`, it.bezeichnung);\n});\nreturn [{ json: { body: p.toString() } }];"
-   }
-  },
-  {
-   "id": "n12",
-   "name": "Stripe Checkout Session",
-   "type": "n8n-nodes-base.httpRequest",
-   "typeVersion": 4.2,
-   "position": [
-    2420,
-    100
-   ],
-   "parameters": {
-    "method": "POST",
-    "url": "https://api.stripe.com/v1/checkout/sessions",
-    "authentication": "genericCredentialType",
-    "genericAuthType": "httpHeaderAuth",
-    "sendBody": true,
-    "contentType": "raw",
-    "rawContentType": "application/x-www-form-urlencoded",
-    "body": "={{ $json.body }}"
-   },
-   "credentials": {
-    "httpHeaderAuth": {
-     "id": "",
-     "name": "Stripe Secret"
+    {
+      "id": "n4",
+      "name": "PB Login",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://pb.runrebels.com/api/collections/_superusers/auth-with-password",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}"
+      },
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "",
+          "name": "PocketBase Superuser"
+        }
+      }
+    },
+    {
+      "id": "n5",
+      "name": "Get Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        200
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://pb.runrebels.com/api/collections/events/records/{{ $('Validate').first().json.data.event_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login').first().json.token }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "n6",
+      "name": "Check Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const ev = $input.first().json;           // Antwort der Event-Abfrage\nconst d = $('Validate').first().json.data;\nconst fail = (m, status=400) => [{ json: { fehler: m, status } }];\n\nif (ev.status !== 'anmeldung_offen') return fail('Die Anmeldung ist nicht geöffnet.');\nif (!ev.preis_cent || ev.preis_cent < 50) return fail('Die Anmeldung ist noch nicht geöffnet.');\nif (ev.anmeldeschluss) {\n  const ende = new Date(ev.anmeldeschluss.replace(' ', 'T'));\n  ende.setUTCHours(23, 59, 59, 999);\n  if (Date.now() > ende.getTime()) return fail('Der Anmeldeschluss ist vorbei.');\n}\nif (d.kategorie === 'kind') {\n  const alter = new Date().getFullYear() - d.geburtsjahr;\n  if (ev.kinderdistanz_max_alter && alter > ev.kinderdistanz_max_alter) return fail('Die Kinderdistanz gilt nur bis ' + ev.kinderdistanz_max_alter + ' Jahre.');\n}\n\nconst items = [{ typ: 'startgebuehr', bezeichnung: ev.name + ' – Startgebühr', betrag_cent: ev.preis_cent }];\nif (d.land === 'CH' && ev.aufschlag_ch_cent > 0) {\n  items.push({ typ: 'versand_ch', bezeichnung: 'Versandaufschlag Schweiz', betrag_cent: ev.aufschlag_ch_cent });\n}\nconst summe = items.reduce((a, i) => a + i.betrag_cent, 0);\n\nconst teilnehmer = {\n  event: ev.id, kategorie: d.kategorie, name: d.name, email: d.email,\n  geburtsjahr: d.geburtsjahr, status: 'offen',\n  agb_akzeptiert_am: new Date().toISOString().replace('T', ' ')\n};\n['anzeigename','geschlecht','podium_wahl','eltern_name','eltern_email'].forEach(k => { if (d[k]) teilnehmer[k] = d[k]; });\nif (d.divers_oeffentlich_optin !== undefined) teilnehmer.divers_oeffentlich_optin = d.divers_oeffentlich_optin;\n\nreturn [{ json: {\n  ok: true, teilnehmer, items, summe, waehrung: (ev.waehrung || 'EUR').toLowerCase(),\n  fulfillment: { medaillen_typ: d.kategorie === 'kind' ? 'kind' : 'teilnahme', adresse: d.adresse, land: d.land, versand_status: 'offen' },\n  eventName: ev.name\n} }];"
+      }
+    },
+    {
+      "id": "n7",
+      "name": "Event OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "n8",
+      "name": "Create Teilnehmer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://pb.runrebels.com/api/collections/teilnehmer/records",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login').first().json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Check Event').first().json.teilnehmer) }}"
+      }
+    },
+    {
+      "id": "n9",
+      "name": "Create Fulfillment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://pb.runrebels.com/api/collections/fulfillment/records",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login').first().json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify(Object.assign({ teilnehmer: $('Create Teilnehmer').first().json.id }, $('Check Event').first().json.fulfillment)) }}"
+      }
+    },
+    {
+      "id": "n10",
+      "name": "Create Bestellung",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://pb.runrebels.com/api/collections/bestellungen/records",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login').first().json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ teilnehmer: $('Create Teilnehmer').first().json.id, line_items: $('Check Event').first().json.items.map(i => ({typ: i.typ, betrag_cent: i.betrag_cent})), betrag_gesamt_cent: $('Check Event').first().json.summe, status: 'offen' }) }}"
+      }
+    },
+    {
+      "id": "n11",
+      "name": "Stripe Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        100
+      ],
+      "parameters": {
+        "jsCode": "const c = $('Check Event').first().json;\nconst t = $('Create Teilnehmer').first().json;\nconst bst = $('Create Bestellung').first().json;\nconst parts = [];\nconst p = { set: (k, v) => parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(String(v))) };\np.set('mode', 'payment');\np.set('locale', 'de');\np.set('customer_email', c.teilnehmer.email);\np.set('success_url', 'https://runrebels.com/danke.html');\np.set('cancel_url', 'https://runrebels.com/#anmeldung');\np.set('metadata[bestellung_id]', bst.id);\np.set('metadata[teilnehmer_id]', t.id);\np.set('payment_intent_data[metadata][bestellung_id]', bst.id);\np.set('payment_intent_data[metadata][teilnehmer_id]', t.id);\nc.items.forEach((it, i) => {\n  p.set(`line_items[${i}][quantity]`, '1');\n  p.set(`line_items[${i}][price_data][currency]`, c.waehrung);\n  p.set(`line_items[${i}][price_data][unit_amount]`, String(it.betrag_cent));\n  p.set(`line_items[${i}][price_data][product_data][name]`, it.bezeichnung);\n});\nreturn [{ json: { body: parts.join('&') } }];"
+      }
+    },
+    {
+      "id": "n12",
+      "name": "Stripe Checkout Session",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2420,
+        100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.stripe.com/v1/checkout/sessions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/x-www-form-urlencoded",
+        "body": "={{ $json.body }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Stripe Secret"
+        }
+      }
+    },
+    {
+      "id": "n13",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2640,
+        100
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ checkout_url: $json.url }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "n14",
+      "name": "Respond Fehler",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1540,
+        320
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ fehler: $json.fehler }) }}",
+        "options": {
+          "responseCode": "={{ $json.status || 400 }}"
+        }
+      }
+    },
+    {
+      "id": "n15",
+      "name": "Respond Fehler Validierung",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        420
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ fehler: $json.fehler }) }}",
+        "options": {
+          "responseCode": "={{ $json.status || 400 }}"
+        }
+      }
     }
-   }
-  },
-  {
-   "id": "n13",
-   "name": "Respond OK",
-   "type": "n8n-nodes-base.respondToWebhook",
-   "typeVersion": 1.1,
-   "position": [
-    2640,
-    100
-   ],
-   "parameters": {
-    "respondWith": "json",
-    "responseBody": "={{ JSON.stringify({ checkout_url: $json.url }) }}",
-    "options": {
-     "responseCode": 200
+  ],
+  "connections": {
+    "Webhook Anmeldung": {
+      "main": [
+        [
+          {
+            "node": "Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "PB Login",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Fehler Validierung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PB Login": {
+      "main": [
+        [
+          {
+            "node": "Get Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Event": {
+      "main": [
+        [
+          {
+            "node": "Check Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Event": {
+      "main": [
+        [
+          {
+            "node": "Event OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Event OK?": {
+      "main": [
+        [
+          {
+            "node": "Create Teilnehmer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Fehler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Teilnehmer": {
+      "main": [
+        [
+          {
+            "node": "Create Fulfillment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Fulfillment": {
+      "main": [
+        [
+          {
+            "node": "Create Bestellung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Bestellung": {
+      "main": [
+        [
+          {
+            "node": "Stripe Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stripe Body": {
+      "main": [
+        [
+          {
+            "node": "Stripe Checkout Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stripe Checkout Session": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
-   }
   },
-  {
-   "id": "n14",
-   "name": "Respond Fehler",
-   "type": "n8n-nodes-base.respondToWebhook",
-   "typeVersion": 1.1,
-   "position": [
-    1540,
-    320
-   ],
-   "parameters": {
-    "respondWith": "json",
-    "responseBody": "={{ JSON.stringify({ fehler: $json.fehler }) }}",
-    "options": {
-     "responseCode": "={{ $json.status || 400 }}"
-    }
-   }
+  "settings": {
+    "executionOrder": "v1"
   },
-  {
-   "id": "n15",
-   "name": "Respond Fehler Validierung",
-   "type": "n8n-nodes-base.respondToWebhook",
-   "typeVersion": 1.1,
-   "position": [
-    660,
-    420
-   ],
-   "parameters": {
-    "respondWith": "json",
-    "responseBody": "={{ JSON.stringify({ fehler: $json.fehler }) }}",
-    "options": {
-     "responseCode": "={{ $json.status || 400 }}"
-    }
-   }
-  }
- ],
- "connections": {
-  "Webhook Anmeldung": {
-   "main": [
-    [
-     {
-      "node": "Validate",
-      "type": "main",
-      "index": 0
-     }
-    ]
-   ]
-  },
-  "Validate": {
-   "main": [
-    [
-     {
-      "node": "Valid?",
-      "type": "main",
-      "index": 0
-     }
-    ]
-   ]
-  },
-  "Valid?": {
-   "main": [
-    [
-     {
-      "node": "PB Login",
-      "type": "main",
-      "index": 0
-     }
-    ],
-    [
-     {
-      "node": "Respond Fehler Validierung",
-      "type": "main",
-      "index": 0
-     }
-    ]
-   ]
-  },
-  "PB Login": {
-   "main": [
-    [
-     {
-      "node": "Get Event",
-      "type": "main",
-      "index": 0
-     }
-    ]
-   ]
-  },
-  "Get Event": {
-   "main": [
-    [
-     {
-      "node": "Check Event",
-      "type": "main",
-      "index": 0
-     }
-    ]
-   ]
-  },
-  "Check Event": {
-   "main": [
-    [
-     {
-      "node": "Event OK?",
-      "type": "main",
-      "index": 0
-     }
-    ]
-   ]
-  },
-  "Event OK?": {
-   "main": [
-    [
-     {
-      "node": "Create Teilnehmer",
-      "type": "main",
-      "index": 0
-     }
-    ],
-    [
-     {
-      "node": "Respond Fehler",
-      "type": "main",
-      "index": 0
-     }
-    ]
-   ]
-  },
-  "Create Teilnehmer": {
-   "main": [
-    [
-     {
-      "node": "Create Fulfillment",
-      "type": "main",
-      "index": 0
-     }
-    ]
-   ]
-  },
-  "Create Fulfillment": {
-   "main": [
-    [
-     {
-      "node": "Create Bestellung",
-      "type": "main",
-      "index": 0
-     }
-    ]
-   ]
-  },
-  "Create Bestellung": {
-   "main": [
-    [
-     {
-      "node": "Stripe Body",
-      "type": "main",
-      "index": 0
-     }
-    ]
-   ]
-  },
-  "Stripe Body": {
-   "main": [
-    [
-     {
-      "node": "Stripe Checkout Session",
-      "type": "main",
-      "index": 0
-     }
-    ]
-   ]
-  },
-  "Stripe Checkout Session": {
-   "main": [
-    [
-     {
-      "node": "Respond OK",
-      "type": "main",
-      "index": 0
-     }
-    ]
-   ]
-  }
- },
- "settings": {
-  "executionOrder": "v1"
- },
- "active": false
+  "active": false
 }
