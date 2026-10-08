@@ -1,0 +1,350 @@
+{
+  "name": "RunRebels – Zahlen",
+  "nodes": [
+    {
+      "id": "z1",
+      "name": "Webhook Zahlen",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "rr-zahlen",
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "zahlen",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "z2",
+      "name": "Prüfen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "jsCode": "\nconst q = ($input.first().json.query || {});\nconst t = String(q.t || '');\nif (!/^[A-Za-z0-9]{16,64}$/.test(t)) return [{ json: { gueltig: false, status: 'ungueltig' } }];\nreturn [{ json: { gueltig: true, t } }];\n"
+      }
+    },
+    {
+      "id": "z3",
+      "name": "Token ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.gueltig }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "z4",
+      "name": "PB Login",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://pb.runrebels.com/api/collections/_superusers/auth-with-password",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}"
+      },
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "",
+          "name": "PocketBase Superuser"
+        }
+      }
+    },
+    {
+      "id": "z5",
+      "name": "Get Bestellung",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        200
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://pb.runrebels.com/api/collections/bestellungen/records?perPage=1&expand=teilnehmer.event&filter=' + encodeURIComponent('zahlungs_token=\"' + $('Prüfen').first().json.t + '\"') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login').first().json.token }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "z6",
+      "name": "Auswerten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        200
+      ],
+      "parameters": {
+        "jsCode": "\nconst parse = (s) => { if (!s) return null; const d = new Date(String(s).replace(' ', 'T')); return isNaN(d) ? null : d; };\nconst ymd = (d) => d.toLocaleDateString('en-CA', { timeZone: 'Europe/Berlin' });\nconst hourBerlin = (d) => parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', hour: '2-digit', hourCycle: 'h23' }).format(d), 10);\nconst fmtDe = (d) => d ? d.toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' }) : '';\n// Beginn des Folgetags (Berlin) nach dem Berlin-Tag von d = Ende des Anmeldeschluss-Tages\nconst nextMidnight = (d) => {\n  const [y, m, dd] = ymd(d).split('-').map(Number);\n  const n = new Date(Date.UTC(y, m - 1, dd + 1));\n  const target = n.toISOString().slice(0, 10);\n  for (const off of [1, 2]) {\n    const t = new Date(n.getTime() - off * 3600000);\n    if (ymd(t) === target && hourBerlin(t) === 0) return t;\n  }\n  return new Date(n.getTime() - 3600000);\n};\n\nconst res = $input.first().json;\nconst b = (res.items || [])[0];\nconst hin = (status) => [{ json: { zahlbar: false, status } }];\nif (!b) return hin('ungueltig');\nif (b.status === 'bezahlt') return hin('bezahlt');\nif (b.status !== 'offen') return hin('verfallen');\nconst tn = b.expand && b.expand.teilnehmer;\nconst ev = tn && tn.expand && tn.expand.event;\nif (!tn || !ev) return hin('ungueltig');\nif (tn.status !== 'offen') return hin(tn.status === 'aktiv' ? 'bezahlt' : 'verfallen');\nconst schluss = parse(ev.anmeldeschluss);\nif (schluss && Date.now() >= nextMidnight(schluss).getTime()) return hin('verfallen');\nconst items = (Array.isArray(b.line_items) ? b.line_items : []).map((i) => ({\n  bezeichnung: i.typ === 'versand_ch' ? 'Versandaufschlag Schweiz' : (ev.name + ' – Startgebühr'),\n  betrag_cent: i.betrag_cent\n}));\nif (!items.length) return hin('ungueltig');\nreturn [{ json: { zahlbar: true, bestellung_id: b.id, teilnehmer_id: tn.id,\n  email: tn.kategorie === 'kind' ? (tn.eltern_email || tn.email || '') : (tn.email || ''),\n  waehrung: String(ev.waehrung || 'EUR').toLowerCase(), items } }];\n"
+      }
+    },
+    {
+      "id": "z7",
+      "name": "Zahlbar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.zahlbar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "z8",
+      "name": "Stripe Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        100
+      ],
+      "parameters": {
+        "jsCode": "\nconst c = $input.first().json;\nconst parts = [];\nconst p = { set: (k, v) => parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(String(v))) };\np.set('mode', 'payment');\np.set('locale', 'de');\nif (c.email) p.set('customer_email', c.email);\np.set('success_url', 'https://runrebels.com/danke.html');\np.set('cancel_url', 'https://runrebels.com/zahlung.html?status=abgebrochen');\np.set('metadata[bestellung_id]', c.bestellung_id);\np.set('metadata[teilnehmer_id]', c.teilnehmer_id);\np.set('payment_intent_data[metadata][bestellung_id]', c.bestellung_id);\np.set('payment_intent_data[metadata][teilnehmer_id]', c.teilnehmer_id);\nc.items.forEach((it, i) => {\n  p.set('line_items[' + i + '][quantity]', '1');\n  p.set('line_items[' + i + '][price_data][currency]', c.waehrung);\n  p.set('line_items[' + i + '][price_data][unit_amount]', String(it.betrag_cent));\n  p.set('line_items[' + i + '][price_data][product_data][name]', it.bezeichnung);\n});\nreturn [{ json: { body: parts.join('&') } }];\n"
+      }
+    },
+    {
+      "id": "z9",
+      "name": "Stripe Checkout Session",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.stripe.com/v1/checkout/sessions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/x-www-form-urlencoded",
+        "body": "={{ $json.body }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Stripe test"
+        }
+      }
+    },
+    {
+      "id": "z10",
+      "name": "Weiter zu Stripe",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1980,
+        100
+      ],
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "={{ $json.url }}",
+        "options": {
+          "responseCode": 302
+        }
+      }
+    },
+    {
+      "id": "z11",
+      "name": "Hinweis",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1540,
+        320
+      ],
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "={{ 'https://runrebels.com/zahlung.html?status=' + $json.status }}",
+        "options": {
+          "responseCode": 302
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Zahlen": {
+      "main": [
+        [
+          {
+            "node": "Prüfen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prüfen": {
+      "main": [
+        [
+          {
+            "node": "Token ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token ok?": {
+      "main": [
+        [
+          {
+            "node": "PB Login",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Hinweis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PB Login": {
+      "main": [
+        [
+          {
+            "node": "Get Bestellung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Bestellung": {
+      "main": [
+        [
+          {
+            "node": "Auswerten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auswerten": {
+      "main": [
+        [
+          {
+            "node": "Zahlbar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zahlbar?": {
+      "main": [
+        [
+          {
+            "node": "Stripe Body",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Hinweis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stripe Body": {
+      "main": [
+        [
+          {
+            "node": "Stripe Checkout Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stripe Checkout Session": {
+      "main": [
+        [
+          {
+            "node": "Weiter zu Stripe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

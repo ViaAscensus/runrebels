@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Zahlung — RunRebels</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/klaro.min.css">
+</head>
+<body>
+  <header class="wrap site-head"><a class="wordmark" href="/">Run<span>Rebels</span></a></header>
+  <main class="wrap" style="padding-block:clamp(48px,8vw,120px)">
+    <h1 id="titel" style="font-family:var(--font-display);font-weight:900;font-size:clamp(2.1rem,6vw,4rem);letter-spacing:-.045em;line-height:1;margin:0 0 24px;max-width:14ch">Zahlung</h1>
+    <p id="text" class="lead" style="font-size:1.25rem;max-width:44ch"></p>
+    <p style="color:var(--text-soft);max-width:44ch">Fragen? Schreib an <a href="mailto:runner@runrebels.com">runner@runrebels.com</a>.</p>
+  </main>
+  <footer class="wrap" style="padding-block:32px;color:var(--text-soft)">
+    <a href="impressum.html">Impressum</a> ·
+    <a href="datenschutz.html">Datenschutz</a> ·
+    <a href="#" data-consent-settings>Cookie-Einstellungen</a>
+  </footer>
+  <script>
+    (function () {
+      var texte = {
+        bezahlt: ['Schon erledigt.', 'Diese Anmeldung ist bereits bezahlt. Die Bestätigung mit deiner Startnummer ist an deine E-Mail-Adresse unterwegs.'],
+        verfallen: ['Zu spät.', 'Der Anmeldeschluss ist vorbei, diese Anmeldung ist verfallen. Wenn du die Zahlung nur verpasst hast, schreib uns kurz.'],
+        abgebrochen: ['Nicht bezahlt.', 'Du hast die Zahlung abgebrochen. Deine Anmeldung bleibt bis zum Anmeldeschluss offen. Den Zahlungslink findest du in der Erinnerungsmail.'],
+        ungueltig: ['Link ungültig.', 'Dieser Zahlungslink ist nicht gültig oder abgelaufen. Prüfe, ob du den ganzen Link aus der Mail kopiert hast.']
+      };
+      var s = new URLSearchParams(location.search).get('status');
+      var t = texte[s] || texte.ungueltig;
+      document.getElementById('titel').textContent = t[0];
+      document.getElementById('text').textContent = t[1];
+    })();
+  </script>
+  <script src="js/config.js"></script>
+  <script src="js/consent.js"></script>
+  <script defer data-config="klaroConfig" src="js/klaro.js"></script>
+</body>
+</html>
