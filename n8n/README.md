@@ -36,4 +36,4 @@ Idempotent: Eine bereits `bezahlte` Bestellung wird übersprungen (Stripe wieder
 
 Nach dem Import müssen die Credentials zugewiesen werden: `Stripe test` (Header Auth) im Node
 „Get Session" und `PocketBase Superuser` im Node „PB Login". Danach speichern und veröffentlichen.
-Noch nicht enthalten: Bestätigungsmail (wartet auf SMTP für `runner@runrebels.com`).
+Nach Zahlungseingang geht eine Bestätigungsmail von `runner@runrebels.com` raus (Nodes `Mail bauen` und `Bestätigung senden`). Dafür in n8n ein SMTP-Credential anlegen (Name `SMTP RunRebels`, `smtp.gmail.com`, Port 465, SSL, App-Passwort) und im Node zuweisen. Schlägt der Versand fehl, läuft der Workflow trotzdem durch (Startnummer ist dann vergeben, die Mail fehlt).

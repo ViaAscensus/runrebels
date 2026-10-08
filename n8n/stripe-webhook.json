@@ -342,12 +342,52 @@
       }
     },
     {
+      "id": "s18",
+      "name": "Mail bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst t = $('Get Teilnehmer').first().json;\nconst ev = $('Get Event').first().json;\nconst nr = $('Plan').first().json.startnummer;\nconst kind = t.kategorie === 'kind';\nconst an = kind ? (t.eltern_email || t.email) : t.email;\nconst anrede = kind ? (t.eltern_name || 'du') : (t.name || 'du');\nconst vorname = String(anrede).split(' ')[0];\nconst fmt = (d) => { if (!d) return ''; const x = new Date(String(d).replace(' ', 'T')); if (isNaN(x)) return ''; return x.toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' }); };\nconst wen = kind ? ('Dein Kind' + (t.name ? ' ' + t.name : '') + ' ist') : 'Du bist';\nconst text = [\n  'Hallo ' + vorname + ',',\n  '',\n  wen + ' dabei. Deine Zahlung ist eingegangen, die Anmeldung für ' + (ev.name || 'die Challenge') + ' steht.',\n  '',\n  'Startnummer: ' + nr,\n  'Zeitraum: ' + fmt(ev.start_date) + ' bis ' + fmt(ev.end_date),\n  '',\n  'Was jetzt kommt: Wir melden uns vor dem Start mit allem, was du zum Einreichen deiner Läufe brauchst. Bis dahin: Schuhe schnüren, Regeln brechen, Kilometer sammeln.',\n  '',\n  'Fragen oder Stornierung (bis Anmeldeschluss' + (ev.anmeldeschluss ? ', ' + fmt(ev.anmeldeschluss) : '') + '): schreib an storno@runrebels.com.',\n  '',\n  'Dein RunRebels-Team',\n  'ein Angebot von ASCENSUS'\n].join('\\n');\nreturn [{ json: { an, betreff: ev.name + ' – du bist dabei (' + nr + ')', text } }];\n"
+      }
+    },
+    {
+      "id": "s19",
+      "name": "Bestätigung senden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        3520,
+        0
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "fromEmail": "RunRebels <runner@runrebels.com>",
+        "toEmail": "={{ $json.an }}",
+        "subject": "={{ $json.betreff }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "SMTP RunRebels"
+        }
+      }
+    },
+    {
       "id": "s16",
       "name": "Respond OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        3300,
+        3740,
         0
       ],
       "parameters": {
@@ -553,6 +593,28 @@
       ]
     },
     "Update Bestellung": {
+      "main": [
+        [
+          {
+            "node": "Mail bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail bauen": {
+      "main": [
+        [
+          {
+            "node": "Bestätigung senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bestätigung senden": {
       "main": [
         [
           {
