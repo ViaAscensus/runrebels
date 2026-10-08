@@ -171,3 +171,10 @@ voller Erstattung.
 - Strava-App-Registrierung und akzeptierte API-Bedingungen.
 - Postfächer `patrick@runrebels.com`, `runner@runrebels.com` und
   `storno@runrebels.com`, die alle erreichbar sein müssen.
+
+## Zahlungserinnerungen und Löschfrist (zur Anwaltsprüfung)
+
+- Unbezahlte Anmeldungen werden am Ende des Anmeldeschluss-Tages `verfallen`; Teilnehmer-, Adress- und Bestelldaten werden 30 Tage später gelöscht (Datenschutzerklärung muss das nennen).
+- Bis zu zwei Erinnerungsmails plus eine Verfall-Mail pro offener Anmeldung; Rechtsgrundlage Vertragsanbahnung, Mails ohne Werbeinhalt. Prüfen lassen.
+- Zahlungslink enthält ein zufälliges Token (Bearer-Link); jeder mit der Mail kann zahlen, nicht mehr.
+- Alle Mails von runner@runrebels.com tragen die Google-Workspace-Fußzeile mit dem ASCENSUS-Rechtshinweis.

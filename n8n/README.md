@@ -37,3 +37,19 @@ Idempotent: Eine bereits `bezahlte` Bestellung wird übersprungen (Stripe wieder
 Nach dem Import müssen die Credentials zugewiesen werden: `Stripe test` (Header Auth) im Node
 „Get Session" und `PocketBase Superuser` im Node „PB Login". Danach speichern und veröffentlichen.
 Nach Zahlungseingang geht eine Bestätigungsmail von `runner@runrebels.com` raus (Nodes `Mail bauen` und `Bestätigung senden`). Dafür in n8n ein SMTP-Credential anlegen (Name `SMTP RunRebels`, `smtp.gmail.com`, Port 465, SSL, App-Passwort) und im Node zuweisen. Schlägt der Versand fehl, läuft der Workflow trotzdem durch (Startnummer ist dann vergeben, die Mail fehlt).
+
+## Workflow „RunRebels – Zahlen" (`zahlen.json`)
+
+`GET /webhook/zahlen?t=<zahlungs_token>` — Link aus den Erinnerungsmails. Sucht die `offene` Bestellung zum Token, erzeugt eine **frische** Stripe-Checkout-Session aus den `line_items` und leitet per 302 dorthin. Ungültig, bezahlt oder verfallen → Weiterleitung auf `zahlung.html?status=…`. Credentials: `PocketBase Superuser`, `Stripe test`.
+
+Voraussetzung: Feld `bestellungen.zahlungs_token` (Text, unique, Autogenerate-Pattern `[a-z0-9]{32}`, keine API-Regeln).
+
+## Workflow „RunRebels – Erinnerungen" (`erinnerungen.json`)
+
+Stündlich. Versand nur 8–20 Uhr (Berlin).
+- Erinnerung 1: 24 h nach Anmeldung, nur `offen`.
+- Erinnerung 2: ab 4 Tage vor Ende des Anmeldeschluss-Tages, frühestens 24 h nach Erinnerung 1.
+- Verfall: nach Ende des Anmeldeschluss-Tages `offen` → `verfallen` (Bestellung + Teilnehmer) plus Info-Mail.
+- Löschung: 30 Tage nach Verfall werden Fulfillment, Bestellung und Teilnehmer gelöscht.
+
+Schlägt der Mailversand fehl, wird nichts markiert und die nächste Stunde versucht es erneut. Credentials: `PocketBase Superuser`, `SMTP RunRebels`.

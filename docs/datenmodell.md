@@ -70,8 +70,9 @@ Zahlungs-/Checkout-Datensatz, als Line-Items statt Festpreis.
 | `line_items` | json | `[{"typ": "startgebuehr", "betrag_cent": ...}]` — spätere Merch-Line-Items kommen hier als weitere Array-Einträge dazu |
 | `betrag_gesamt_cent` | number | |
 | `status` | select | `offen` / `bezahlt` / `fehlgeschlagen` / `erstattet` / `storniert` / `verfallen` |
+| `zahlungs_token` | text, unique | zufällig (PocketBase-Autogenerate `[a-z0-9]{32}`), nur für den Zahlungslink `…/webhook/zahlen?t=<token>`, gültig solange `status = offen`; keine API-Regeln (nur Superuser) |
 | `erinnerung1_gesendet` | datetime | 24 h nach Anmeldung, nur bei `offen` — verhindert Doppelversand |
-| `erinnerung2_gesendet` | datetime | 3 Tage vor `anmeldeschluss`, nur bei `offen` |
+| `erinnerung2_gesendet` | datetime | 3 Tage vor Ende des Anmeldeschluss-Tages, nur bei `offen`, frühestens 24 h nach Erinnerung 1 |
 
 Aufbewahrung: Bestelldaten bleiben für die Buchhaltung erhalten.
 `verfallen` (am Anmeldeschluss unbezahlt) wird 30 Tage später samt
