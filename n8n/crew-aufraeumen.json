@@ -1,0 +1,162 @@
+{
+  "name": "RunRebels – Crew Aufräumen",
+  "nodes": [
+    {
+      "id": "a1",
+      "name": "Täglich 3 Uhr",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 3 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "a2",
+      "name": "PB Login Aufräumen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://pb.runrebels.com/api/collections/_superusers/auth-with-password",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}"
+      },
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "",
+          "name": "PocketBase Superuser"
+        }
+      }
+    },
+    {
+      "id": "a3",
+      "name": "Alte Eintragungen laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://pb.runrebels.com/api/collections/crew/records?perPage=200&fields=id&filter=' + encodeURIComponent('status=\"unbestaetigt\" && eingetragen_am != \"\" && eingetragen_am < \"' + new Date(Date.now() - 30 * 86400000).toISOString().replace('T', ' ') + '\"') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login Aufräumen').first().json.token }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "a4",
+      "name": "Ids sammeln",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const items = ($input.first().json.items) || [];\n// Ein Eintrag je Datensatz; ohne Treffer endet der Lauf hier.\nreturn items.map((r) => ({ json: { id: r.id } }));"
+      }
+    },
+    {
+      "id": "a5",
+      "name": "Eintragung löschen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "method": "DELETE",
+        "url": "={{ 'https://pb.runrebels.com/api/collections/crew/records/' + $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login Aufräumen').first().json.token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Täglich 3 Uhr": {
+      "main": [
+        [
+          {
+            "node": "PB Login Aufräumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PB Login Aufräumen": {
+      "main": [
+        [
+          {
+            "node": "Alte Eintragungen laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alte Eintragungen laden": {
+      "main": [
+        [
+          {
+            "node": "Ids sammeln",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ids sammeln": {
+      "main": [
+        [
+          {
+            "node": "Eintragung löschen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Berlin"
+  },
+  "active": false
+}
