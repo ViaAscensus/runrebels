@@ -1,0 +1,219 @@
+{
+  "name": "RunRebels – Crew Update",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Berlin"
+  },
+  "nodes": [
+    {
+      "id": "u1",
+      "name": "Start (von Hand)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "u2",
+      "name": "Update-Inhalt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "empfaenger",
+              "value": "test",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "testAdresse",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "betreff",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "text",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "buttonText",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "a6",
+              "name": "buttonUrl",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "u3",
+      "name": "PB Login Update",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://pb.runrebels.com/api/collections/_superusers/auth-with-password",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}"
+      },
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "",
+          "name": "PocketBase Superuser"
+        }
+      }
+    },
+    {
+      "id": "u4",
+      "name": "Crew laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://pb.runrebels.com/api/collections/crew/records?perPage=500&filter=status%3D%22bestaetigt%22",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login Update').first().json.token }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "u5",
+      "name": "Mails bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Gemeinsame HTML-Vorlage der Crew-Mails. Wird von scripts/mails_bauen.py\n// in die Code-Nodes der Workflows kopiert (n8n kann keine Dateien importieren).\n// Aufruf: rrMail({ kopf, kopfAlt, kopfH, vorname, absaetze, button, klein, abmeldeUrl, vorschau })\nconst RR_BASE = 'https://runrebels.com/assets/mail/';\nconst rrEsc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\nconst rrLink = (s) => rrEsc(s).replace(/(https?:\\/\\/[^\\s<]+)/g, (u) => '<a href=\"' + u + '\" style=\"color:#0B3C41;text-decoration:underline\">' + u + '</a>');\nconst rrP = (s, extra) => '<p style=\"margin:0 0 16px 0;font:16px/24px Arial,Helvetica,sans-serif;color:#0B3C41;' + (extra || '') + '\">' + rrLink(s).replace(/\\n/g, '<br>') + '</p>';\nfunction rrMail(o) {\n  const abs = (o.absaetze || []).map((a) => rrP(a)).join('');\n  const klein = (o.klein || []).map((a) => rrP(a, 'font-size:13px;line-height:20px;color:#4B6B6E')).join('');\n  const btn = o.button ? '<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"margin:8px 0 22px 0\"><tr><td align=\"center\" bgcolor=\"#D6246E\" style=\"border-radius:8px\"><a href=\"' + rrEsc(o.button.url) + '\" style=\"display:block;padding:15px 20px;font:bold 15px Arial,Helvetica,sans-serif;letter-spacing:1px;text-transform:uppercase;color:#FFFFFF;text-decoration:none\">' + rrEsc(o.button.text) + '</a></td></tr></table>' : '';\n  const abm = o.abmeldeUrl ? ' · <a href=\"' + rrEsc(o.abmeldeUrl) + '\" style=\"color:#FFF4EA;text-decoration:underline\">Abmelden</a>' : '';\n  const html = '<!doctype html><html lang=\"de\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>RunRebels</title></head>'\n    + '<body style=\"margin:0;padding:0;background:#E9EEEE\">'\n    + '<div style=\"display:none;max-height:0;overflow:hidden;opacity:0;color:transparent\">' + rrEsc(o.vorschau || '') + '</div>'\n    + '<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" bgcolor=\"#E9EEEE\"><tr><td align=\"center\" style=\"padding:24px 12px\">'\n    + '<table role=\"presentation\" width=\"600\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;max-width:600px;background:#FFF4EA\">'\n    + '<tr><td bgcolor=\"#0E6E75\" style=\"background:#0E6E75;font:bold 26px/32px Arial,Helvetica,sans-serif;color:#FFF4EA;text-transform:uppercase\"><img src=\"' + RR_BASE + o.kopf + '.png\" width=\"600\" ' + (o.kopfH ? 'height=\"' + o.kopfH + '\" ' : '') + 'alt=\"' + rrEsc(o.kopfAlt) + '\" style=\"display:block;width:100%;max-width:600px;height:auto;border:0;color:#FFF4EA;font:bold 26px/32px Arial,Helvetica,sans-serif\"></td></tr>'\n    + '<tr><td style=\"padding:28px 32px 12px 32px\">' + rrP('Hallo ' + o.vorname + ',') + abs + btn + klein + rrP('Dein RunRebels-Team\\nAllein laufen. Nie allein sein.', 'margin-bottom:8px') + '</td></tr>'\n    + '<tr><td><img src=\"' + RR_BASE + 'streifen.png\" width=\"600\" height=\"14\" alt=\"\" style=\"display:block;width:100%;height:auto;border:0\"></td></tr>'\n    + '<tr><td bgcolor=\"#0B3C41\" style=\"background:#0B3C41;padding:16px 32px;font:12px/18px Arial,Helvetica,sans-serif;color:#FFF4EA\">RunRebels · ein Angebot von ASCENSUS' + abm + '</td></tr>'\n    + '</table></td></tr></table></body></html>';\n  const tl = [];\n  tl.push('Hallo ' + o.vorname + ',', '');\n  (o.absaetze || []).forEach((a) => tl.push(a, ''));\n  if (o.button) tl.push(o.button.text + ': ' + o.button.url, '');\n  (o.klein || []).forEach((a) => tl.push(a, ''));\n  tl.push('Dein RunRebels-Team', 'Allein laufen. Nie allein sein.', '', 'RunRebels, ein Angebot von ASCENSUS');\n  if (o.abmeldeUrl) tl.push('Abmelden: ' + o.abmeldeUrl);\n  return { html, text: tl.join('\\n') };\n}\n\nconst cfg = $('Update-Inhalt').first().json;\nconst items = ($input.first().json.items) || [];\nconst testen = String(cfg.empfaenger || 'test').toLowerCase() !== 'alle';\nif (!cfg.betreff || !cfg.text) throw new Error('Betreff und Text im Node Update-Inhalt ausfüllen.');\nif (testen && !cfg.testAdresse) throw new Error('Test: bitte testAdresse im Node Update-Inhalt eintragen (oder empfaenger auf alle setzen).');\nconst absaetze = String(cfg.text).split(/\\n\\s*\\n/).map((s) => s.trim()).filter(Boolean);\nconst button = (cfg.buttonText && cfg.buttonUrl) ? { text: cfg.buttonText, url: cfg.buttonUrl } : null;\nconst an = testen ? [{ email: cfg.testAdresse, vorname: 'Test', abmelde_token: 'test' }] : items;\nreturn an.map((r) => {\n  const m = rrMail({\n    kopf: 'kopf-update', kopfAlt: 'Neuigkeiten aus der Crew.', kopfH: 246,\n    vorschau: absaetze[0].slice(0, 90), vorname: r.vorname, absaetze, button,\n    abmeldeUrl: 'https://n8n.runrebels.com/webhook/crew-abmelden?t=' + r.abmelde_token\n  });\n  return { json: { an: r.email, betreff: (testen ? '[TEST] ' : '') + cfg.betreff, text: m.text, html: m.html } };\n});"
+      }
+    },
+    {
+      "id": "u6",
+      "name": "Mail senden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1100,
+        300
+      ],
+      "parameters": {
+        "fromEmail": "RunRebels <runner@runrebels.com>",
+        "toEmail": "={{ $json.an }}",
+        "subject": "={{ $json.betreff }}",
+        "emailFormat": "both",
+        "text": "={{ $json.text }}",
+        "html": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "SMTP RunRebels"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Start (von Hand)": {
+      "main": [
+        [
+          {
+            "node": "Update-Inhalt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update-Inhalt": {
+      "main": [
+        [
+          {
+            "node": "PB Login Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PB Login Update": {
+      "main": [
+        [
+          {
+            "node": "Crew laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crew laden": {
+      "main": [
+        [
+          {
+            "node": "Mails bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mails bauen": {
+      "main": [
+        [
+          {
+            "node": "Mail senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

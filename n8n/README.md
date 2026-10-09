@@ -53,3 +53,18 @@ Stündlich. Versand nur 8–20 Uhr (Berlin).
 - Löschung: 30 Tage nach Verfall werden Fulfillment, Bestellung und Teilnehmer gelöscht.
 
 Schlägt der Mailversand fehl, wird nichts markiert und die nächste Stunde versucht es erneut. Credentials: `PocketBase Superuser`, `SMTP RunRebels`.
+
+## Crew-Mails (HTML) und Updates
+
+Alle Crew-Mails nutzen die gemeinsame Vorlage `n8n/mail-vorlage.js` und die Kopfbilder in
+`web/assets/mail/` (Logo, Stempel und Überschrift in Bungee als PNG, weil Mailprogramme keine
+Webfonts laden). Bilder neu erzeugen: `python3 scripts/mail_bilder.py`. Die Vorlage in die Workflows
+übertragen: `python3 scripts/mails_bauen.py`, danach `crew.json` und `crew-update.json` in n8n
+importieren bzw. die Code-Nodes übernehmen.
+
+- **Bestätigungsmail** (`DOI-Mail bauen`) und **Willkommensmail** (`Bestätigung planen`) in `crew.json`.
+- **Crew Mailfolge** (`crew-mails.json`, Mail nach 4 und 10 Tagen) ist stillgelegt: in n8n deaktivieren.
+- **`crew-update.json`**: Updates von Hand. Im Node „Update-Inhalt" Betreff, Text (Absätze durch Leerzeile
+  trennen) und optional Button eintragen. `empfaenger = test` schickt nur an `testAdresse`;
+  erst mit `alle` geht die Mail an alle bestätigten Mitglieder (mit eigenem Abmeldelink).
+  Start mit „Execute workflow".
