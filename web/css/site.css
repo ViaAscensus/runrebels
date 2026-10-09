@@ -58,3 +58,8 @@ img{max-width:100%;height:auto}
 .run-footer .social a{color:var(--creme);border-color:var(--creme)}
 .run-footer .social a:hover{background:var(--creme);color:var(--tiefteal)}
 .run-header__brand span{display:inline-block}
+
+/* Startseite im Vorab-Modus: Navigation mit "Coming soon"-Stempel */
+.nav-soon{position:relative}
+.nav-soon::after{content:"Coming soon";position:absolute;right:-58px;top:-8px;transform:rotate(-6deg);padding:1px 10px;background:var(--action);color:var(--on-action);font:400 15px/1.2 var(--font-display);text-transform:uppercase;letter-spacing:.03em;border-radius:var(--radius-sm);pointer-events:none;white-space:nowrap}
+@media(max-width:860px){.nav-soon{display:none}}
