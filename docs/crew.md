@@ -45,9 +45,8 @@ Zugriffsregeln: alle leer (nur Superuser). Der Zugriff läuft ausschließlich ü
 Zeitfelder sind als `text` angelegt (Format `YYYY-MM-DD HH:MM:SS.000Z`), so wie in
 den bestehenden Workflows geparst.
 
-Offen: Unbestätigte Eintragungen nach 30 Tagen löschen (so steht es in der
-Datenschutzerklärung). Dafür fehlt noch ein Löschlauf, er kann an
-`erinnerungen.json` angelehnt werden.
+Unbestätigte Eintragungen werden nach 30 Tagen gelöscht (so steht es in der
+Datenschutzerklärung), siehe `n8n/crew-aufraeumen.json`.
 
 ## n8n
 
@@ -56,6 +55,10 @@ Datenschutzerklärung). Dafür fehlt noch ein Löschlauf, er kann an
   Mail 1, leitet auf `/crew-bestaetigt.html`), `GET /webhook/crew-abmelden?t=…`.
 - `n8n/crew-mails.json`: täglich 9 Uhr. Mail 2 ab Tag 4, Mail 3 ab Tag 10 nach der
   Bestätigung, nur zwischen 8 und 20 Uhr, mit Abmeldelink.
+
+- `n8n/crew-aufraeumen.json`: täglich 3 Uhr. Löscht Einträge mit `status = unbestaetigt`
+  und `eingetragen_am` älter als 30 Tage endgültig. Bestätigte und abgemeldete bleiben.
+  Nach dem Import Credential `PocketBase Superuser` zuweisen und veröffentlichen.
 
 Credentials wie bei den bestehenden Workflows (`PocketBase Superuser`, `SMTP RunRebels`).
 Eine Adresse, die schon bestätigt ist, bekommt keine Fehlermeldung, damit niemand
