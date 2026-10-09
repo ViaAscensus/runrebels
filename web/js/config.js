@@ -7,7 +7,7 @@ window.RUNREBELS = {
   // n8n-Webhook der Crew-Eintragung (Double-Opt-in)
   N8N_CREW_URL: "https://n8n.runrebels.com/webhook/crew",
   // Social-Profile: Adresse eintragen, dann erscheint der Link automatisch. Leer = kein Link.
-  SOCIAL: { instagram: "https://www.instagram.com/runrebels.crew/", tiktok: "https://www.tiktok.com/@runrebels.crew", strava: "https://www.strava.com/clubs/2376285", facebook: "https://www.facebook.com/profile.php?id=61595044839568" },
+  SOCIAL: { instagram: "https://www.instagram.com/runrebels.crew/", tiktok: "https://www.tiktok.com/@runrebels.crew", strava: "https://www.strava.com/clubs/RunRebelsCrew", facebook: "https://www.facebook.com/profile.php?id=61595044839568" },
   // Tracking, nur mit Einwilligung (siehe js/consent.js). Leer lassen = Dienst aus.
   GA_ID: "G-20KGF6LVZB",
   CLARITY_ID: "yu5fnsr3n0"
