@@ -1,0 +1,1122 @@
+{
+  "name": "RunRebels – Crew",
+  "nodes": [
+    {
+      "id": "a1",
+      "name": "Webhook Crew",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "crew",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://runrebels.com,https://www.runrebels.com"
+        }
+      },
+      "webhookId": "rr-crew"
+    },
+    {
+      "id": "a2",
+      "name": "Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body || {};\nconst s = (v, max=200) => (typeof v === 'string' ? v.trim().slice(0, max) : '');\nconst fail = (m) => [{ json: { fehler: m, status: 400 } }];\nif (s(b.website)) return fail('Eintragung abgelehnt.');                 // Honeypot\nconst vorname = s(b.vorname, 60);\nif (vorname.length < 2) return fail('Bitte trag deinen Vornamen ein.');\nconst email = s(b.email, 200).toLowerCase();\nif (!/^[^@\\s\"'\\\\]+@[^@\\s\"'\\\\]+\\.[^@\\s\"'\\\\]+$/.test(email)) return fail('Bitte prüfen: Bei der E-Mail-Adresse stimmt etwas nicht.');\nif (b.einwilligung !== true) return fail('Bitte bestätige, dass wir dir Neuigkeiten per E-Mail schicken dürfen.');\nconst stil = s(b.stil, 120);\nreturn [{ json: { ok: true, data: { vorname, email, stil } } }];"
+      }
+    },
+    {
+      "id": "a3",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "a4",
+      "name": "PB Login Eintragen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://pb.runrebels.com/api/collections/_superusers/auth-with-password",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}"
+      },
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "",
+          "name": "PocketBase Superuser"
+        }
+      }
+    },
+    {
+      "id": "a5",
+      "name": "Find Crew",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        200
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://pb.runrebels.com/api/collections/crew/records?perPage=1&filter=' + encodeURIComponent('email=\"' + $('Validate').first().json.data.email + '\"') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login Eintragen').first().json.token }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "a6",
+      "name": "Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Validate').first().json.data;\nconst rec = ($input.first().json.items || [])[0];\nif (rec && rec.status === 'bestaetigt') return [{ json: { aktion: 'skip' } }];   // keine Auskunft, ob die Adresse schon bekannt ist\nconst now = new Date().toISOString().replace('T', ' ');\nconst body = { vorname: d.vorname, email: d.email, stil: d.stil, status: 'unbestaetigt', eingetragen_am: now,\n  einwilligung_text: 'Newsletter-Einwilligung (Double-Opt-in) über runrebels.com, eingetragen ' + now };\nreturn [{ json: { aktion: rec ? 'update' : 'create', id: rec ? rec.id : '', body } }];"
+      }
+    },
+    {
+      "id": "a7",
+      "name": "Senden?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.aktion !== 'skip' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "a8",
+      "name": "Create or Update",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        100
+      ],
+      "parameters": {
+        "method": "={{ $('Plan').first().json.id ? 'PATCH' : 'POST' }}",
+        "url": "=https://pb.runrebels.com/api/collections/crew/records{{ $('Plan').first().json.id ? '/' + $('Plan').first().json.id : '' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login Eintragen').first().json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Plan').first().json.body) }}"
+      }
+    },
+    {
+      "id": "a9",
+      "name": "DOI-Mail bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        100
+      ],
+      "parameters": {
+        "jsCode": "const rec = $input.first().json;\nconst link = 'https://n8n.runrebels.com/webhook/crew-bestaetigen?t=' + rec.token;\nconst text = ['Hallo ' + rec.vorname + ',', '', 'du willst in die Crew von RunRebels. Schön.', '', 'Bestätige kurz deine E-Mail-Adresse, dann bist du drin:', link, '',\n  'Du hast dich nicht eingetragen? Dann ignoriere diese Mail, es passiert nichts.', ''].concat(['', 'Dein RunRebels-Team', 'ein Angebot von ASCENSUS']).join('\\n');\nreturn [{ json: { an: rec.email, betreff: 'Fast in der Crew: bitte bestätige deine E-Mail', text } }];"
+      }
+    },
+    {
+      "id": "a10",
+      "name": "DOI-Mail senden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1980,
+        100
+      ],
+      "parameters": {
+        "fromEmail": "RunRebels <runner@runrebels.com>",
+        "toEmail": "={{ $json.an }}",
+        "subject": "={{ $json.betreff }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "SMTP RunRebels"
+        }
+      }
+    },
+    {
+      "id": "a11",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2200,
+        60
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true }) }}",
+        "options": {
+          "responseCode": "200"
+        }
+      }
+    },
+    {
+      "id": "a12",
+      "name": "Respond Mailfehler",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2200,
+        200
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ fehler: 'Die Bestätigungsmail ließ sich nicht senden. Versuch es gleich noch einmal.' }) }}",
+        "options": {
+          "responseCode": "500"
+        }
+      }
+    },
+    {
+      "id": "a13",
+      "name": "Respond Fehler Validierung",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        420
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ fehler: $json.fehler }) }}",
+        "options": {
+          "responseCode": "={{ $json.status || 400 }}"
+        }
+      }
+    },
+    {
+      "id": "b1",
+      "name": "Webhook Bestätigen",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        800
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "crew-bestaetigen",
+        "responseMode": "responseNode"
+      },
+      "webhookId": "rr-crew-bestaetigen"
+    },
+    {
+      "id": "b2",
+      "name": "Token prüfen Bestätigen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        800
+      ],
+      "parameters": {
+        "jsCode": "const t = ($input.first().json.query || {}).t || '';\nif (!/^[a-z0-9]{40}$/.test(t)) return [{ json: { ok: false } }];\nreturn [{ json: { ok: true, t } }];"
+      }
+    },
+    {
+      "id": "b3",
+      "name": "Token ok Bestätigen?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        800
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "b4",
+      "name": "PB Login Bestätigen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        700
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://pb.runrebels.com/api/collections/_superusers/auth-with-password",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}"
+      },
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "",
+          "name": "PocketBase Superuser"
+        }
+      }
+    },
+    {
+      "id": "b5",
+      "name": "Find Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        700
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://pb.runrebels.com/api/collections/crew/records?perPage=1&filter=' + encodeURIComponent('token=\"' + $('Token prüfen Bestätigen').first().json.t + '\"') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login Bestätigen').first().json.token }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "b6",
+      "name": "Bestätigung planen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        700
+      ],
+      "parameters": {
+        "jsCode": "const rec = ($input.first().json.items || [])[0];\nif (!rec) return [{ json: { aktion: 'fehler' } }];\nif (rec.status === 'bestaetigt') return [{ json: { aktion: 'schon' } }];\nconst now = new Date().toISOString().replace('T', ' ');\nconst stil = rec.stil ? ['', 'Du hast uns geschrieben, wie du läufst: „' + rec.stil + '“. Genau so ist es richtig.'] : [];\nconst abm = 'https://n8n.runrebels.com/webhook/crew-abmelden?t=' + rec.abmelde_token;\nconst text = ['Hallo ' + rec.vorname + ',', '', 'du bist dabei. Willkommen in der Crew.', '',\n  'RunRebels ist Laufen für alle, auf eigene Art. Wie du läufst, entscheidest du. Was gewertet wird, steht vorher fest.'].concat(stil, ['',\n  'Was jetzt kommt: In den nächsten zwei Wochen schreiben wir dir noch zweimal. Erst zeigen wir dir, wer in der Crew läuft und wo du uns findest. Dann erzählen wir, wofür jeder Lauf läuft.', '',\n  'Dein erster Lauf ist der Laufrausch im Januar. Alles dazu: https://runrebels.com/laufrausch/', '',\n  'Allein laufen. Nie allein sein.', '', 'Du willst keine Mails mehr? Hier trägst du dich aus: ' + abm, ''], ['', 'Dein RunRebels-Team', 'ein Angebot von ASCENSUS']).join('\\n');\nreturn [{ json: { aktion: 'ok', id: rec.id, patch: { status: 'bestaetigt', bestaetigt_am: now }, an: rec.email, betreff: 'Willkommen in der Crew, ' + rec.vorname + '.', text } }];"
+      }
+    },
+    {
+      "id": "b7",
+      "name": "Neu bestätigt?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        700
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.aktion === 'ok' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "b8",
+      "name": "Status setzen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        600
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://pb.runrebels.com/api/collections/crew/records/' + $('Bestätigung planen').first().json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login Bestätigen').first().json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Bestätigung planen').first().json.patch) }}"
+      }
+    },
+    {
+      "id": "b9",
+      "name": "Willkommensmail senden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1760,
+        600
+      ],
+      "parameters": {
+        "fromEmail": "RunRebels <runner@runrebels.com>",
+        "toEmail": "={{ $('Bestätigung planen').first().json.an }}",
+        "subject": "={{ $('Bestätigung planen').first().json.betreff }}",
+        "emailFormat": "text",
+        "text": "={{ $('Bestätigung planen').first().json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "SMTP RunRebels"
+        }
+      }
+    },
+    {
+      "id": "b10",
+      "name": "Weiter bestätigt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1980,
+        600
+      ],
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "https://runrebels.com/crew-bestaetigt.html",
+        "options": {
+          "responseCode": 302
+        }
+      }
+    },
+    {
+      "id": "b11",
+      "name": "Weiter schon oder Fehler",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1540,
+        820
+      ],
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "={{ 'https://runrebels.com/crew-bestaetigt.html' + ($('Bestätigung planen').first().json.aktion === 'fehler' ? '?fehler=1' : '') }}",
+        "options": {
+          "responseCode": 302
+        }
+      }
+    },
+    {
+      "id": "b12",
+      "name": "Weiter Token fehlerhaft Bestätigen",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        900
+      ],
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "https://runrebels.com/crew-bestaetigt.html?fehler=1",
+        "options": {
+          "responseCode": 302
+        }
+      }
+    },
+    {
+      "id": "c1",
+      "name": "Webhook Abmelden",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1300
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "crew-abmelden",
+        "responseMode": "responseNode"
+      },
+      "webhookId": "rr-crew-abmelden"
+    },
+    {
+      "id": "c2",
+      "name": "Token prüfen Abmelden",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        1300
+      ],
+      "parameters": {
+        "jsCode": "const t = ($input.first().json.query || {}).t || '';\nif (!/^[a-z0-9]{40}$/.test(t)) return [{ json: { ok: false } }];\nreturn [{ json: { ok: true, t } }];"
+      }
+    },
+    {
+      "id": "c3",
+      "name": "Token ok Abmelden?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        1300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "c4",
+      "name": "PB Login Abmelden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        1200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://pb.runrebels.com/api/collections/_superusers/auth-with-password",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}"
+      },
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "",
+          "name": "PocketBase Superuser"
+        }
+      }
+    },
+    {
+      "id": "c5",
+      "name": "Find Abmelde-Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        1200
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://pb.runrebels.com/api/collections/crew/records?perPage=1&filter=' + encodeURIComponent('abmelde_token=\"' + $('Token prüfen Abmelden').first().json.t + '\"') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login Abmelden').first().json.token }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "c6",
+      "name": "Abmeldung planen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        1200
+      ],
+      "parameters": {
+        "jsCode": "const rec = ($input.first().json.items || [])[0];\nif (!rec) return [{ json: { aktion: 'fehler' } }];\nreturn [{ json: { aktion: 'ok', id: rec.id, patch: { status: 'abgemeldet' } } }];"
+      }
+    },
+    {
+      "id": "c7",
+      "name": "Gefunden?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        1200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.aktion === 'ok' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "c8",
+      "name": "Abmelden setzen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        1100
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://pb.runrebels.com/api/collections/crew/records/' + $('Abmeldung planen').first().json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login Abmelden').first().json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Abmeldung planen').first().json.patch) }}"
+      }
+    },
+    {
+      "id": "c9",
+      "name": "Weiter abgemeldet",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        1100
+      ],
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "https://runrebels.com/crew-abgemeldet.html",
+        "options": {
+          "responseCode": 302
+        }
+      }
+    },
+    {
+      "id": "c10",
+      "name": "Weiter Abmeldung Fehler",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1540,
+        1320
+      ],
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "https://runrebels.com/crew-abgemeldet.html?fehler=1",
+        "options": {
+          "responseCode": 302
+        }
+      }
+    },
+    {
+      "id": "c11",
+      "name": "Weiter Token fehlerhaft Abmelden",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        1400
+      ],
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "https://runrebels.com/crew-abgemeldet.html?fehler=1",
+        "options": {
+          "responseCode": 302
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Crew": {
+      "main": [
+        [
+          {
+            "node": "Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "PB Login Eintragen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Fehler Validierung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PB Login Eintragen": {
+      "main": [
+        [
+          {
+            "node": "Find Crew",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Crew": {
+      "main": [
+        [
+          {
+            "node": "Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan": {
+      "main": [
+        [
+          {
+            "node": "Senden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Senden?": {
+      "main": [
+        [
+          {
+            "node": "Create or Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or Update": {
+      "main": [
+        [
+          {
+            "node": "DOI-Mail bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DOI-Mail bauen": {
+      "main": [
+        [
+          {
+            "node": "DOI-Mail senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DOI-Mail senden": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Mailfehler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Bestätigen": {
+      "main": [
+        [
+          {
+            "node": "Token prüfen Bestätigen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token prüfen Bestätigen": {
+      "main": [
+        [
+          {
+            "node": "Token ok Bestätigen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token ok Bestätigen?": {
+      "main": [
+        [
+          {
+            "node": "PB Login Bestätigen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Weiter Token fehlerhaft Bestätigen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PB Login Bestätigen": {
+      "main": [
+        [
+          {
+            "node": "Find Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Token": {
+      "main": [
+        [
+          {
+            "node": "Bestätigung planen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bestätigung planen": {
+      "main": [
+        [
+          {
+            "node": "Neu bestätigt?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Neu bestätigt?": {
+      "main": [
+        [
+          {
+            "node": "Status setzen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Weiter schon oder Fehler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status setzen": {
+      "main": [
+        [
+          {
+            "node": "Willkommensmail senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Willkommensmail senden": {
+      "main": [
+        [
+          {
+            "node": "Weiter bestätigt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Weiter bestätigt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Abmelden": {
+      "main": [
+        [
+          {
+            "node": "Token prüfen Abmelden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token prüfen Abmelden": {
+      "main": [
+        [
+          {
+            "node": "Token ok Abmelden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token ok Abmelden?": {
+      "main": [
+        [
+          {
+            "node": "PB Login Abmelden",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Weiter Token fehlerhaft Abmelden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PB Login Abmelden": {
+      "main": [
+        [
+          {
+            "node": "Find Abmelde-Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Abmelde-Token": {
+      "main": [
+        [
+          {
+            "node": "Abmeldung planen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Abmeldung planen": {
+      "main": [
+        [
+          {
+            "node": "Gefunden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gefunden?": {
+      "main": [
+        [
+          {
+            "node": "Abmelden setzen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Weiter Abmeldung Fehler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Abmelden setzen": {
+      "main": [
+        [
+          {
+            "node": "Weiter abgemeldet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Berlin"
+  },
+  "active": false
+}

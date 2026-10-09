@@ -1,0 +1,57 @@
+/* Seitenlayout für die Marken-Seiten. Bausteine und Farben kommen aus runrebels.css (run-…). */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column}
+main{flex:1}
+img{max-width:100%;height:auto}
+.site-wrap{width:100%;max-width:1120px;margin:0 auto;padding:0 24px}
+.section{padding:var(--space-8) 0}
+.section--tight{padding:var(--space-7) 0}
+.lead{font:400 21px/32px var(--font-sans);max-width:36em;margin:var(--space-4) 0 0}
+.prose{max-width:38em}
+.prose p{margin:0 0 var(--space-4)}
+.prose h2{margin:var(--space-7) 0 var(--space-4)}
+
+/* Hero */
+.hero{position:relative;overflow:hidden;padding:var(--space-8) 0 calc(var(--space-8) + 24px)}
+.hero__grid{position:relative;z-index:1;display:grid;grid-template-columns:1.1fr .9fr;gap:var(--space-7);align-items:center}
+.hero__claim{margin:var(--space-5) 0 0;font:600 22px/30px var(--font-sans)}
+.hero__stripes{position:absolute;right:-60px;bottom:-1px;display:flex;gap:16px;height:96px;z-index:0}
+.hero__stripes i{display:block;width:56px;height:100%;transform:skewX(var(--streifen-winkel));background:var(--stripe-1)}
+.hero__stripes i:nth-child(2){background:var(--stripe-2)}
+.hero__stripes i:nth-child(3){background:var(--ink)}
+@media(max-width:860px){.hero__grid{grid-template-columns:1fr}.hero__stripes{display:none}}
+
+/* Crew-Formular als Startnummern-Karte */
+.crew-card{padding:var(--space-5);border:3px solid var(--ink);border-radius:var(--radius-lg)}
+.crew-card h2{margin:0 0 var(--space-4)}
+.crew-card .run-btn{width:100%}
+.crew-status{white-space:pre-line;margin:0 0 var(--space-4);padding:var(--space-3) var(--space-4);border:2px solid var(--ink);border-radius:var(--radius-sm);font:600 16px/24px var(--font-sans)}
+.crew-status[hidden]{display:none}
+.crew-status--error{border:4px double var(--ink)}
+.crew-card .run-choice{align-items:flex-start;padding:var(--space-2) 0;min-height:44px}
+.crew-card .run-choice__input{margin-top:2px}
+.crew-card .run-hint a,.crew-card .run-choice a{color:var(--ink)}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.crew-fine{margin:var(--space-3) 0 0;font:400 14px/20px var(--font-sans)}
+
+/* Raster */
+.grid{display:grid;gap:var(--space-5);grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.band{padding:var(--space-7) 0}
+.band .run-title{max-width:18em}
+.band__statement{margin:var(--space-4) 0 0;max-width:30em;font:600 24px/34px var(--font-sans)}
+.values{display:grid;gap:var(--space-5);grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin:var(--space-5) 0 0;padding:0;list-style:none}
+.values li{padding:var(--space-5);border:2px solid var(--ink);border-radius:var(--radius-lg)}
+.values h3{margin:0 0 var(--space-2);font:400 20px/26px var(--font-display);overflow-wrap:anywhere;hyphens:auto}
+.values p{margin:0}
+.empty{padding:var(--space-6);border:2px dashed var(--ink);border-radius:var(--radius-lg);max-width:40em}
+.empty p{margin:0 0 var(--space-4)}
+.social{display:flex;flex-wrap:wrap;gap:var(--space-3);margin:0;padding:0;list-style:none}
+.social[hidden]{display:none}
+.social a{display:inline-flex;align-items:center;min-height:44px;padding:0 var(--space-5);border:2px solid var(--ink);border-radius:var(--radius-pill);color:var(--ink);font:600 15px/20px var(--font-sans);text-decoration:none}
+.social a:hover{background:var(--ink);color:var(--ground)}
+.run-footer__row{display:flex;flex-wrap:wrap;gap:var(--space-4) var(--space-6);align-items:flex-start;justify-content:space-between}
+.run-footer .social a{color:var(--creme);border-color:var(--creme)}
+.run-footer .social a:hover{background:var(--creme);color:var(--tiefteal)}
+.run-header__brand span{display:inline-block}

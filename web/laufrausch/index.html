@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Laufrausch: die Neujahrschallenge von RunRebels</title>
+  <link rel="canonical" href="https://runrebels.com/laufrausch/">
+  <meta name="description" content="31 Tage laufen, deine Kilometer zählen. Virtuelle Laufchallenge im Januar: mit Strava, Datei oder Foto einreichen, Medaille per Post.">
+  <link rel="preload" href="../fonts/unbounded-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/klaro.min.css">
+</head>
+<body>
+  <header class="wrap site-head">
+    <a class="wordmark" href="/">Run<span>Rebels</span></a>
+    <nav aria-label="Hauptnavigation"><a href="#ablauf">So läuft's</a><a href="#anmeldung">Anmelden</a></nav>
+  </header>
+
+  <main>
+    <section class="wrap hero">
+      <div>
+        <h1 id="event-name">Laufrausch</h1>
+        <p class="lead">31 Tage im Januar. Du läufst, wo und wann du willst. Deine Kilometer zählen.</p>
+        <ul class="facts" id="facts">
+          <li><strong>1.–31. Januar</strong> laufen</li>
+          <li><strong>Medaille</strong> per Post</li>
+          <li><strong>Strava, Datei oder Foto</strong> zum Einreichen</li>
+        </ul>
+      </div>
+
+      <form class="bib" id="anmeldung" novalidate aria-labelledby="form-title">
+        <div class="bib-head" aria-hidden="true">RunRebels · Startnummer</div>
+        <h2 id="form-title">Hol dir deine Startnummer</h2>
+        <div id="status" class="status" role="status" hidden></div>
+        <div class="visually-hidden" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+
+        <fieldset class="field">
+          <legend>Wer läuft?</legend>
+          <div class="choice">
+            <label><input type="radio" name="kategorie" value="erwachsen" checked> Ich (Erwachsene)</label>
+            <label><input type="radio" name="kategorie" value="kind"> Mein Kind (1 km, bis 12)</label>
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label for="name" id="name-label">Vor- und Nachname</label>
+          <input type="text" id="name" name="name" autocomplete="name" required>
+        </div>
+        <div class="field" id="anzeigename-field">
+          <label for="anzeigename">Name in der Rangliste</label>
+          <input type="text" id="anzeigename" name="anzeigename" maxlength="40" autocomplete="nickname">
+          <span class="hint">Frei wählbar, zum Beispiel ein Spitzname. Leer lassen, dann nehmen wir deinen Vornamen.</span>
+        </div>
+        <div class="field" id="eltern-field" hidden>
+          <label for="eltern_name">Name des Elternteils</label>
+          <input type="text" id="eltern_name" name="eltern_name" autocomplete="name">
+          <span class="hint">Kinder werden nie öffentlich in der Rangliste genannt.</span>
+        </div>
+        <div class="field">
+          <label for="email" id="email-label">E-Mail</label>
+          <input type="email" id="email" name="email" autocomplete="email" required>
+        </div>
+        <div class="row two">
+          <div class="field">
+            <label for="geburtsjahr">Geburtsjahr</label>
+            <input type="number" id="geburtsjahr" name="geburtsjahr" inputmode="numeric" min="1920" max="2026" required>
+          </div>
+          <div class="field" id="geschlecht-field">
+            <label for="geschlecht">Wertung</label>
+            <select id="geschlecht" name="geschlecht">
+              <option value="">Bitte wählen</option>
+              <option value="weiblich">Frauen</option>
+              <option value="maennlich">Männer</option>
+              <option value="divers">Divers</option>
+            </select>
+          </div>
+        </div>
+        <div id="divers-box" hidden>
+          <div class="field">
+            <label for="podium_wahl">Bestzeit-Wertung</label>
+            <select id="podium_wahl" name="podium_wahl">
+              <option value="">Bitte wählen</option>
+              <option value="weiblich">Bei den Frauen mitlaufen</option>
+              <option value="maennlich">Bei den Männern mitlaufen</option>
+            </select>
+            <span class="hint">Deine Zeit zählt immer, auch für die Kilometer-Wertung.</span>
+          </div>
+          <label class="check"><input type="checkbox" name="divers_optin"> <span>Ich will öffentlich in einer eigenen Divers-Wertung stehen. Das kann ich jederzeit widerrufen.</span></label>
+        </div>
+
+        <fieldset class="field">
+          <legend>Wohin schicken wir deine Medaille?</legend>
+          <div class="field"><label for="strasse">Straße und Hausnummer</label><input type="text" id="strasse" name="strasse" autocomplete="street-address" required></div>
+          <div class="row plz">
+            <div class="field"><label for="plz">PLZ</label><input type="text" id="plz" name="plz" inputmode="numeric" autocomplete="postal-code" required></div>
+            <div class="field"><label for="ort">Ort</label><input type="text" id="ort" name="ort" autocomplete="address-level2" required></div>
+          </div>
+          <div class="field">
+            <label for="land">Land</label>
+            <select id="land" name="land">
+              <option value="DE">Deutschland</option>
+              <option value="AT">Österreich</option>
+              <option value="CH">Schweiz</option>
+            </select>
+            <span class="hint" id="ch-hint" hidden>Für die Schweiz kommt ein Versandaufschlag dazu. Du siehst ihn vor der Zahlung.</span>
+          </div>
+        </fieldset>
+
+        <label class="check"><input type="checkbox" name="agb" required> <span>Ich akzeptiere die <a href="/teilnahmebedingungen.html">Teilnahmebedingungen</a>.</span></label>
+        <label class="check"><input type="checkbox" name="datenschutz" required> <span>Ich habe die <a href="/datenschutz.html">Datenschutzerklärung</a> gelesen.</span></label>
+
+        <button class="btn" type="submit" id="submit">Weiter zur Zahlung</button>
+        <p class="fine">Du zahlst sicher über Stripe. Bis zum Anmeldeschluss kannst du kostenlos stornieren, wir erstatten abzüglich der Zahlungsgebühr.</p>
+      </form>
+    </section>
+
+    <section class="section" id="ablauf">
+      <div class="wrap">
+        <h2>So läuft der Januar</h2>
+        <div class="cols">
+          <div><h3>Kilometer sammeln</h3><p>Jeder Kilometer im Januar zählt. Wer das Ziel erreicht, bekommt die Teilnahme-Medaille. Tempo und Einzeldistanz sind egal.</p></div>
+          <div><h3>10 Kilometer so schnell du kannst</h3><p>Lauf die 10 km so oft du willst. Nur deine schnellste Zeit zählt. Die Top 3 bei Frauen und Männern bekommen eine Sondermedaille.</p></div>
+          <div><h3>Gesamtwertung</h3><p>Ein Punkt pro Kilometer plus Punkte für deine Platzierung in der Bestzeit-Wertung. Die Kilometer wiegen mehr als die Zeit.</p></div>
+          <div><h3>Kinderlauf</h3><p>Ein Kilometer für Kinder bis 12 Jahre. Ohne Rangliste, dafür mit Urkunde. Die Eltern melden an und reichen per Foto ein.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <h2>So reichst du ein</h2>
+        <div class="cols">
+          <div><h3>Mit Strava</h3><p>Verknüpfe dein Konto einmal. Deine Läufe kommen automatisch.</p></div>
+          <div><h3>Mit Datei</h3><p>Lade die .FIT- oder .GPX-Datei von deiner Uhr hoch. Du brauchst kein Strava.</p></div>
+          <div><h3>Mit Foto</h3><p>Fotografiere das Display deiner Uhr. Wir lesen Zeit und Distanz aus, du bestätigst oder korrigierst die Werte.</p></div>
+          <div><h3>Faire Auswertung</h3><p>Auffällige Zeiten prüft ein Mensch. Eine KI liest Fotos aus und gibt höchstens eine Einschätzung, entscheiden tut sie nie.</p></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap">
+      <span>RunRebels · ein Angebot von ASCENSUS</span>
+      <nav aria-label="Rechtliches"><a href="/impressum.html">Impressum</a><a href="/datenschutz.html">Datenschutz</a><a href="/teilnahmebedingungen.html">Teilnahmebedingungen</a><a href="#" data-consent-settings>Datenschutzeinstellungen</a></nav>
+    </div>
+  </footer>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/consent.js"></script>
+  <script defer data-config="klaroConfig" src="../js/klaro.js"></script>
+  <script src="../js/anmeldung.js"></script>
+</body>
+</html>

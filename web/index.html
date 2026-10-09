@@ -3,151 +3,144 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Laufrausch — die Neujahrschallenge von RunRebels</title>
-  <meta name="description" content="31 Tage laufen, deine Kilometer zählen. Virtuelle Laufchallenge im Januar: mit Strava, Datei oder Foto einreichen, Medaille per Post.">
-  <link rel="preload" href="fonts/unbounded-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/klaro.min.css">
+  <title>RunRebels: Laufen für alle, auf eigene Art</title>
+  <meta name="description" content="Dein Style. Dein Lauf. Dein Platz in der Crew. Trag dich in die RunRebels-Crew ein: Laufen für alle, und jeder Lauf unterstützt einen guten Zweck.">
+  <link rel="canonical" href="https://runrebels.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="RunRebels">
+  <meta property="og:title" content="RunRebels: Laufen für alle, auf eigene Art">
+  <meta property="og:description" content="Dein Style. Dein Lauf. Dein Platz in der Crew. Trag dich in die RunRebels-Crew ein: Laufen für alle, und jeder Lauf unterstützt einen guten Zweck.">
+  <meta property="og:url" content="https://runrebels.com/">
+  <meta property="og:image" content="https://runrebels.com/assets/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/logo/streifen-kreis-sonnengelb.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/Bungee-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/Outfit-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/runrebels.css">
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="stylesheet" href="/css/klaro.min.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"RunRebels","url":"https://runrebels.com/","logo":"https://runrebels.com/assets/logo/hauptzeichen-kreis-sonnengelb.svg","slogan":"Dein Style. Dein Lauf. Dein Platz in der Crew.","description":"RunRebels ist Laufen für alle, auf eigene Art, in der Crew. Jeder Lauf unterstützt einen guten Zweck."}</script>
 </head>
-<body>
-  <header class="wrap site-head">
-    <a class="wordmark" href="/">Run<span>Rebels</span></a>
-    <nav aria-label="Hauptnavigation"><a href="#ablauf">So läuft's</a><a href="#anmeldung">Anmelden</a></nav>
+<body class="run-page" data-theme="teal">
+  <a class="run-skip" href="#inhalt">Zum Inhalt springen</a>
+  <header class="run-header">
+    <a class="run-header__brand" href="/"><img src="/assets/logo/rr-streifen-kreis-sonnengelb.svg" alt="" width="48" height="48"><span>RunRebels</span></a>
+    <nav aria-label="Hauptnavigation"><ul class="run-nav"><li><a href="/laufrausch/">Läufe</a></li><li><a href="/crew.html">Crew</a></li><li><a href="/haltung.html">Haltung</a></li><li><a href="/spende.html">Spende</a></li><li><a href="/einblicke.html">Einblicke</a></li></ul></nav>
+    <a class="run-btn" href="/#crew">In die Crew eintragen</a>
   </header>
-
-  <main>
-    <section class="wrap hero">
-      <div>
-        <h1 id="event-name">Laufrausch</h1>
-        <p class="lead">31 Tage im Januar. Du läufst, wo und wann du willst. Deine Kilometer zählen.</p>
-        <ul class="facts" id="facts">
-          <li><strong>1.–31. Januar</strong> laufen</li>
-          <li><strong>Medaille</strong> per Post</li>
-          <li><strong>Strava, Datei oder Foto</strong> zum Einreichen</li>
-        </ul>
-      </div>
-
-      <form class="bib" id="anmeldung" novalidate aria-labelledby="form-title">
-        <div class="bib-head" aria-hidden="true">RunRebels · Startnummer</div>
-        <h2 id="form-title">Hol dir deine Startnummer</h2>
-        <div id="status" class="status" role="status" hidden></div>
-        <div class="visually-hidden" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
-
-        <fieldset class="field">
-          <legend>Wer läuft?</legend>
-          <div class="choice">
-            <label><input type="radio" name="kategorie" value="erwachsen" checked> Ich (Erwachsene)</label>
-            <label><input type="radio" name="kategorie" value="kind"> Mein Kind (1 km, bis 12)</label>
-          </div>
-        </fieldset>
-
-        <div class="field">
-          <label for="name" id="name-label">Vor- und Nachname</label>
-          <input type="text" id="name" name="name" autocomplete="name" required>
+  <main id="inhalt">
+    <section class="hero run-surface" data-theme="teal">
+      <div class="site-wrap hero__grid">
+        <div>
+          <h1 class="run-title run-title--xl">Be part of our crew.</h1>
+          <p class="hero__claim">Dein Style. Dein Lauf. Dein Platz in der Crew.</p>
+          <p class="lead">Allein laufen. Nie allein sein. RunRebels ist Laufen für alle, auf eigene Art. Egal welcher Schuh, welche Pace, welcher Look.</p>
         </div>
-        <div class="field" id="anzeigename-field">
-          <label for="anzeigename">Name in der Rangliste</label>
-          <input type="text" id="anzeigename" name="anzeigename" maxlength="40" autocomplete="nickname">
-          <span class="hint">Frei wählbar, zum Beispiel ein Spitzname. Leer lassen, dann nehmen wir deinen Vornamen.</span>
+        <form class="crew-form crew-card run-page" id="crew" novalidate aria-labelledby="c-t">
+        <h2 class="run-title run-title--m" id="c-t">Dein Platz in der Crew</h2>
+        <div class="crew-status" role="status" tabindex="-1" hidden></div>
+        <div class="hp" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+        <div class="run-field">
+          <label class="run-label" for="c-vorname">Vorname</label>
+          <input class="run-input" type="text" id="c-vorname" name="vorname" autocomplete="given-name" required maxlength="60">
         </div>
-        <div class="field" id="eltern-field" hidden>
-          <label for="eltern_name">Name des Elternteils</label>
-          <input type="text" id="eltern_name" name="eltern_name" autocomplete="name">
-          <span class="hint">Kinder werden nie öffentlich in der Rangliste genannt.</span>
+        <div class="run-field">
+          <label class="run-label" for="c-email">E-Mail</label>
+          <input class="run-input" type="email" id="c-email" name="email" autocomplete="email" required maxlength="200">
         </div>
-        <div class="field">
-          <label for="email" id="email-label">E-Mail</label>
-          <input type="email" id="email" name="email" autocomplete="email" required>
+        <div class="run-field">
+          <label class="run-label" for="c-stil">Wie läufst du? (freiwillig)</label>
+          <input class="run-input" type="text" id="c-stil" name="stil" maxlength="120" aria-describedby="c-stil-h">
+          <p class="run-hint" id="c-stil-h">Zum Beispiel: im Trainingsanzug, mit Kinderwagen, langsam, aber ich komme an.</p>
         </div>
-        <div class="row two">
-          <div class="field">
-            <label for="geburtsjahr">Geburtsjahr</label>
-            <input type="number" id="geburtsjahr" name="geburtsjahr" inputmode="numeric" min="1920" max="2026" required>
-          </div>
-          <div class="field" id="geschlecht-field">
-            <label for="geschlecht">Wertung</label>
-            <select id="geschlecht" name="geschlecht">
-              <option value="">Bitte wählen</option>
-              <option value="weiblich">Frauen</option>
-              <option value="maennlich">Männer</option>
-              <option value="divers">Divers</option>
-            </select>
-          </div>
-        </div>
-        <div id="divers-box" hidden>
-          <div class="field">
-            <label for="podium_wahl">Bestzeit-Wertung</label>
-            <select id="podium_wahl" name="podium_wahl">
-              <option value="">Bitte wählen</option>
-              <option value="weiblich">Bei den Frauen mitlaufen</option>
-              <option value="maennlich">Bei den Männern mitlaufen</option>
-            </select>
-            <span class="hint">Deine Zeit zählt immer, auch für die Kilometer-Wertung.</span>
-          </div>
-          <label class="check"><input type="checkbox" name="divers_optin"> <span>Ich will öffentlich in einer eigenen Divers-Wertung stehen. Das kann ich jederzeit widerrufen.</span></label>
-        </div>
-
-        <fieldset class="field">
-          <legend>Wohin schicken wir deine Medaille?</legend>
-          <div class="field"><label for="strasse">Straße und Hausnummer</label><input type="text" id="strasse" name="strasse" autocomplete="street-address" required></div>
-          <div class="row plz">
-            <div class="field"><label for="plz">PLZ</label><input type="text" id="plz" name="plz" inputmode="numeric" autocomplete="postal-code" required></div>
-            <div class="field"><label for="ort">Ort</label><input type="text" id="ort" name="ort" autocomplete="address-level2" required></div>
-          </div>
-          <div class="field">
-            <label for="land">Land</label>
-            <select id="land" name="land">
-              <option value="DE">Deutschland</option>
-              <option value="AT">Österreich</option>
-              <option value="CH">Schweiz</option>
-            </select>
-            <span class="hint" id="ch-hint" hidden>Für die Schweiz kommt ein Versandaufschlag dazu. Du siehst ihn vor der Zahlung.</span>
-          </div>
-        </fieldset>
-
-        <label class="check"><input type="checkbox" name="agb" required> <span>Ich akzeptiere die <a href="teilnahmebedingungen.html">Teilnahmebedingungen</a>.</span></label>
-        <label class="check"><input type="checkbox" name="datenschutz" required> <span>Ich habe die <a href="datenschutz.html">Datenschutzerklärung</a> gelesen.</span></label>
-
-        <button class="btn" type="submit" id="submit">Weiter zur Zahlung</button>
-        <p class="fine">Du zahlst sicher über Stripe. Bis zum Anmeldeschluss kannst du kostenlos stornieren, wir erstatten abzüglich der Zahlungsgebühr.</p>
+        <label class="run-choice"><input class="run-choice__input" type="checkbox" name="einwilligung" required> <span>Ich möchte per E-Mail Neuigkeiten von RunRebels bekommen. Ich kann mich jederzeit abmelden. Mehr dazu in der <a href="/datenschutz.html#crew">Datenschutzerklärung</a>.</span></label>
+        <button class="run-btn run-btn--pink" type="submit">In die Crew eintragen</button>
+        <p class="crew-fine">Du bekommst eine Mail, in der du deine Adresse bestätigst. Erst dann bist du eingetragen.</p>
       </form>
+      </div>
+      <div class="hero__stripes" aria-hidden="true"><i></i><i></i><i></i></div>
     </section>
 
-    <section class="section" id="ablauf">
-      <div class="wrap">
-        <h2>So läuft der Januar</h2>
-        <div class="cols">
-          <div><h3>Kilometer sammeln</h3><p>Jeder Kilometer im Januar zählt. Wer das Ziel erreicht, bekommt die Teilnahme-Medaille. Tempo und Einzeldistanz sind egal.</p></div>
-          <div><h3>10 Kilometer so schnell du kannst</h3><p>Lauf die 10 km so oft du willst. Nur deine schnellste Zeit zählt. Die Top 3 bei Frauen und Männern bekommen eine Sondermedaille.</p></div>
-          <div><h3>Gesamtwertung</h3><p>Ein Punkt pro Kilometer plus Punkte für deine Platzierung in der Bestzeit-Wertung. Die Kilometer wiegen mehr als die Zeit.</p></div>
-          <div><h3>Kinderlauf</h3><p>Ein Kilometer für Kinder bis 12 Jahre. Ohne Rangliste, dafür mit Urkunde. Die Eltern melden an und reichen per Foto ein.</p></div>
+    <section class="section">
+      <div class="site-wrap">
+        <h2 class="run-title">Wie du läufst, entscheidest du.</h2>
+        <div class="prose">
+          <p class="lead">Was gewertet wird, steht vorher fest: Zeitraum, Distanz und Nachweis gelten für alle gleich. Alles andere ist deins. Ob Ryzon Apparel oder 80er-Trainingsanzug, jeder macht den Sport so, wie er ihn möchte.</p>
         </div>
+        <ul class="values">
+          <li><h3>Zugehörigkeit</h3><p>Die Crew ist ein Platz gegen Einsamkeit und Anonymität. Du bekommst einen Namen, ein Gesicht und eine Geschichte.</p></li>
+          <li><h3>Individualität</h3><p>Dein Schuh, deine Pace, dein Look. Niemand schreibt dir vor, wie du läufst.</p></li>
+          <li><h3>Gutes tun</h3><p>Jeder Lauf läuft für etwas. Mit deiner Anmeldung unterstützt du einen guten Zweck.</p></li>
+          <li><h3>Mut</h3><p>Anfangen zählt. Fairness und Freude sind die Haltung dahinter.</p></li>
+        </ul>
+        <p style="margin-top:var(--space-5)"><a class="run-btn run-btn--ghost" href="/haltung.html">Unsere Haltung</a></p>
+      </div>
+    </section>
+
+    <section class="band run-surface" data-theme="sonnengelb">
+      <div class="site-wrap">
+        <h2 class="run-title">Offen für alle.</h2>
+        <p class="band__statement">RunRebels ist offen für alle. Rassismus und jede Form von Diskriminierung haben bei uns keinen Platz.</p>
       </div>
     </section>
 
     <section class="section">
-      <div class="wrap">
-        <h2>So reichst du ein</h2>
-        <div class="cols">
-          <div><h3>Mit Strava</h3><p>Verknüpfe dein Konto einmal. Deine Läufe kommen automatisch.</p></div>
-          <div><h3>Mit Datei</h3><p>Lade die .FIT- oder .GPX-Datei von deiner Uhr hoch. Du brauchst kein Strava.</p></div>
-          <div><h3>Mit Foto</h3><p>Fotografiere das Display deiner Uhr. Wir lesen Zeit und Distanz aus, du bestätigst oder korrigierst die Werte.</p></div>
-          <div><h3>Faire Auswertung</h3><p>Auffällige Zeiten prüft ein Mensch. Eine KI liest Fotos aus und gibt höchstens eine Einschätzung, entscheiden tut sie nie.</p></div>
-        </div>
+      <div class="site-wrap">
+        <h2 class="run-title">Jeder Lauf läuft für etwas.</h2>
+        <p class="lead">Mit deiner Anmeldung unterstützt du einen guten Zweck. Wofür, und wie viel pro Anmeldung, geben wir vor jedem Lauf bekannt. Nach dem Lauf rechnen wir offen ab.</p>
+        <div style="margin-top:var(--space-5);max-width:720px"><div class="run-donate">
+          <img src="/assets/logo/medaille-kreis-sonnengelb.svg" alt="" width="96" height="96">
+          <div>
+            <h3 class="run-donate__title">Jeder Lauf läuft für etwas.</h3>
+            <dl>
+              <div><dt>Zweck</dt><dd style="font-family:var(--font-sans);font-size:17px;line-height:24px">Steht vor jedem Lauf fest</dd></div>
+              <div><dt>Pro Anmeldung</dt><dd style="font-family:var(--font-sans);font-size:17px;line-height:24px">Steht vor jedem Lauf fest</dd></div>
+              <div><dt>Abrechnung</dt><dd style="font-family:var(--font-sans);font-size:17px;line-height:24px">Offen, nach dem Lauf</dd></div>
+            </dl>
+          </div>
+        </div></div>
+        <p style="margin-top:var(--space-5)"><a class="run-btn run-btn--ghost" href="/spende.html">So läuft die Spende</a></p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:0">
+      <div class="site-wrap grid">
+        <article class="run-card">
+          <div class="run-card__body">
+            <h2 class="run-card__title">Dein erster Lauf: Laufrausch</h2>
+            <p>31 Tage im Januar. Du läufst, wo und wann du willst, und deine Kilometer zählen. Medaille per Post.</p>
+            <div><a class="run-btn" href="/laufrausch/">Zum Laufrausch</a></div>
+          </div>
+        </article>
+        <article class="run-card">
+          <div class="run-card__body">
+            <h2 class="run-card__title">Einblicke in die Crew</h2>
+            <p>Bilder, Clips und Geschichten aus der Crew. Mit Namen und mit Einwilligung.</p>
+            <div><a class="run-btn" href="/einblicke.html">Zu den Einblicken</a></div>
+          </div>
+        </article>
       </div>
     </section>
   </main>
-
-  <footer class="site-foot">
-    <div class="wrap">
-      <span>RunRebels · ein Angebot von ASCENSUS</span>
-      <nav aria-label="Rechtliches"><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="teilnahmebedingungen.html">Teilnahmebedingungen</a><a href="#" data-consent-settings>Datenschutzeinstellungen</a></nav>
+  <footer class="run-footer">
+    <div class="site-wrap">
+      <p class="run-footer__statement">RunRebels ist offen für alle. Rassismus und jede Form von Diskriminierung haben bei uns keinen Platz.</p>
+      <div class="run-footer__row">
+        <ul class="run-footer__links">
+          <li><a href="/impressum.html">Impressum</a></li>
+          <li><a href="/datenschutz.html">Datenschutz</a></li>
+          <li><a href="/teilnahmebedingungen.html">Teilnahmebedingungen</a></li>
+          <li><a href="mailto:runner@runrebels.com?subject=Etwas%20melden">Etwas melden</a></li>
+          <li><a href="#" data-consent-settings>Datenschutzeinstellungen</a></li>
+        </ul>
+        <ul class="social" data-social hidden></ul>
+      </div>
+      <small>Allein laufen. Nie allein sein. · RunRebels ist ein Angebot von ASCENSUS.</small>
     </div>
   </footer>
-
-  <script src="js/config.js"></script>
-  <script src="js/consent.js"></script>
-  <script defer data-config="klaroConfig" src="js/klaro.js"></script>
-  <script src="js/anmeldung.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/consent.js"></script>
+  <script defer data-config="klaroConfig" src="/js/klaro.js"></script>
+  <script src="/js/crew.js"></script>
 </body>
 </html>

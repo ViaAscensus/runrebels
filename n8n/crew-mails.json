@@ -1,0 +1,202 @@
+{
+  "name": "RunRebels – Crew Mailfolge",
+  "nodes": [
+    {
+      "id": "m1",
+      "name": "Täglich 9 Uhr",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "m2",
+      "name": "PB Login Mailfolge",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://pb.runrebels.com/api/collections/_superusers/auth-with-password",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}"
+      },
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "",
+          "name": "PocketBase Superuser"
+        }
+      }
+    },
+    {
+      "id": "m3",
+      "name": "Crew laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://pb.runrebels.com/api/collections/crew/records?perPage=500&filter=status%3D%22bestaetigt%22%20%26%26%20mail3_gesendet%3D%22%22",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login Mailfolge').first().json.token }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "m4",
+      "name": "Plan Mailfolge",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const items = ($input.first().json.items) || [];\nconst parse = (s) => { if (!s) return null; const d = new Date(String(s).replace(' ', 'T')); return isNaN(d) ? null : d; };\nconst hourBerlin = (d) => parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', hour: '2-digit', hourCycle: 'h23' }).format(d), 10);\nconst now = new Date(); const DAY = 86400000;\nif (hourBerlin(now) < 8 || hourBerlin(now) >= 20) return [];\nconst SITE = 'https://runrebels.com';\nconst sig = ['', 'Dein RunRebels-Team', 'ein Angebot von ASCENSUS'];\nconst out = [];\nfor (const r of items) {\n  const b = parse(r.bestaetigt_am); if (!b || r.status !== 'bestaetigt') continue;\n  const tage = (now - b) / DAY;\n  const abm = 'Du willst keine Mails mehr? Hier trägst du dich aus: https://n8n.runrebels.com/webhook/crew-abmelden?t=' + r.abmelde_token;\n  let aktion = null, betreff = '', zeilen = [];\n  if (!r.mail2_gesendet && tage >= 4) {\n    aktion = 'mail2'; betreff = 'Wer in der Crew läuft';\n    zeilen = ['Hallo ' + r.vorname + ',', '', 'die Crew besteht aus Menschen, nicht aus Startnummern. Da läuft jemand im 80er-Trainingsanzug, jemand schiebt den Kinderwagen, jemand ist langsam und kommt stolz an. Alle laufen auf ihre Art, und alle gehören dazu.', '',\n      'Wir zeigen das auf Instagram und TikTok: Gesichter, Geschichten und ein bisschen Rebellion gegen die Routine. Alle Kanäle findest du hier:', SITE + '/einblicke.html', '',\n      'Allein laufen. Nie allein sein.', '', abm, ''].concat(sig);\n  } else if (r.mail2_gesendet && !r.mail3_gesendet && tage >= 10) {\n    aktion = 'mail3'; betreff = 'Jeder Lauf läuft für etwas';\n    zeilen = ['Hallo ' + r.vorname + ',', '', 'bei RunRebels läuft jeder Lauf für etwas. Mit jeder Anmeldung unterstützt du einen guten Zweck. Wofür, und wie viel pro Anmeldung, geben wir vor dem Lauf bekannt. Nach dem Lauf rechnen wir offen ab.', '',\n      'Dein erster Lauf ist der Laufrausch: im Januar, wo und wann du willst, mit deinen Kilometern. Alle Infos und die Anmeldung:', SITE + '/laufrausch/', '',\n      'Dein Start hilft jemandem.', '', abm, ''].concat(sig);\n  }\n  if (!aktion) continue;\n  const patch = aktion === 'mail2' ? { mail2_gesendet: now.toISOString().replace('T', ' ') } : { mail3_gesendet: now.toISOString().replace('T', ' ') };\n  out.push({ json: { id: r.id, an: r.email, aktion, betreff, text: zeilen.join('\\n'), patch } });\n}\nreturn out;"
+      }
+    },
+    {
+      "id": "m5",
+      "name": "Mail senden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "fromEmail": "RunRebels <runner@runrebels.com>",
+        "toEmail": "={{ $json.an }}",
+        "subject": "={{ $json.betreff }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "SMTP RunRebels"
+        }
+      }
+    },
+    {
+      "id": "m6",
+      "name": "Record patchen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        200
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://pb.runrebels.com/api/collections/crew/records/' + $('Plan Mailfolge').item.json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('PB Login Mailfolge').first().json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Plan Mailfolge').item.json.patch) }}"
+      }
+    }
+  ],
+  "connections": {
+    "Täglich 9 Uhr": {
+      "main": [
+        [
+          {
+            "node": "PB Login Mailfolge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PB Login Mailfolge": {
+      "main": [
+        [
+          {
+            "node": "Crew laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crew laden": {
+      "main": [
+        [
+          {
+            "node": "Plan Mailfolge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan Mailfolge": {
+      "main": [
+        [
+          {
+            "node": "Mail senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail senden": {
+      "main": [
+        [
+          {
+            "node": "Record patchen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Berlin"
+  },
+  "active": false
+}
