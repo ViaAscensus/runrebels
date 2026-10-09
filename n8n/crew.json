@@ -235,7 +235,15 @@
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({ ok: true }) }}",
         "options": {
-          "responseCode": "200"
+          "responseCode": "200",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "https://runrebels.com"
+              }
+            ]
+          }
         }
       }
     },
@@ -252,7 +260,15 @@
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({ fehler: 'Die Bestätigungsmail ließ sich nicht senden. Versuch es gleich noch einmal.' }) }}",
         "options": {
-          "responseCode": "500"
+          "responseCode": "500",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "https://runrebels.com"
+              }
+            ]
+          }
         }
       }
     },
@@ -269,7 +285,15 @@
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({ fehler: $json.fehler }) }}",
         "options": {
-          "responseCode": "={{ $json.status || 400 }}"
+          "responseCode": "={{ $json.status || 400 }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "https://runrebels.com"
+              }
+            ]
+          }
         }
       }
     },
