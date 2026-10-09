@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /danke.html
+Disallow: /zahlung.html
+Disallow: /crew-bestaetigt.html
+Disallow: /crew-abgemeldet.html
+
+Sitemap: https://runrebels.com/sitemap.xml

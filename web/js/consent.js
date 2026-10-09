@@ -82,7 +82,7 @@
     hideLearnMore: false,
     noticeAsModal: false,
     lang: 'de',
-    privacyPolicy: 'datenschutz.html',
+    privacyPolicy: '/datenschutz.html',
     purposes: ['statistics'],
     services: services,
     translations: {
