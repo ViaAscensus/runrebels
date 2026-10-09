@@ -286,7 +286,15 @@
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({ checkout_url: $json.url }) }}",
         "options": {
-          "responseCode": 200
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "https://runrebels.com"
+              }
+            ]
+          }
         }
       }
     },
@@ -303,7 +311,15 @@
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({ fehler: $json.fehler }) }}",
         "options": {
-          "responseCode": "={{ $json.status || 400 }}"
+          "responseCode": "={{ $json.status || 400 }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "https://runrebels.com"
+              }
+            ]
+          }
         }
       }
     },
@@ -320,7 +336,15 @@
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({ fehler: $json.fehler }) }}",
         "options": {
-          "responseCode": "={{ $json.status || 400 }}"
+          "responseCode": "={{ $json.status || 400 }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "https://runrebels.com"
+              }
+            ]
+          }
         }
       }
     }
